@@ -1,0 +1,651 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta name="theme-color" content="#0C1828"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-title" content="月の満ち欠けLAB"/>
+<title>月の満ち欠けLAB</title>
+<style>
+/* まなびラボ共通の形（見出し・枠線・角の丸み・アンバーの強調）を、宇宙の暗い画面で使う。配色はレンズLABと共通 */
+:root{
+  --bg:#0C1828; --grid:#15263B; --panel:#12223A; --panel-2:#0E1C30;
+  --line:#2A4362; --line-strong:#3E5F84;
+  --ink:#EAF1F8; --ink-soft:#93A9C2; --ink-faint:#6F87A3;
+  --amber:#E0982C; --amber-soft:#3A2A14; --amber-ink:#F4C27A;
+  --cyan:#7FD8F0;
+  --mono:ui-monospace,"SF Mono",Consolas,"Courier New",monospace;
+  --gothic:"Hiragino Kaku Gothic ProN","Yu Gothic","Meiryo",system-ui,sans-serif;
+  font-family:var(--gothic);color:var(--ink);background:var(--bg);-webkit-tap-highlight-color:transparent;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;min-width:320px;background-color:var(--bg);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:24px 24px;
+}
+button,input{font:inherit}
+button{cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible{outline:2px solid var(--amber);outline-offset:3px}
+.hidden{display:none!important}
+
+.shell{max-width:1100px;margin:0 auto;padding:16px calc(16px + env(safe-area-inset-right)) calc(48px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left))}
+.back{display:inline-block;font-size:13px;color:var(--ink-soft);text-decoration:none;margin-bottom:8px}
+.back:hover{color:var(--ink);text-decoration:underline}
+.top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
+.brand{min-width:0}
+.brand h1{font-size:25.5px;margin:0;letter-spacing:.08em;font-weight:700}
+.brand h1 .en{display:block;font-family:var(--mono);font-size:11.5px;letter-spacing:.24em;color:var(--ink-soft);font-weight:400;margin-top:4px}
+.brand p{font-size:13.5px;color:var(--ink-soft);margin:8px 0 0;line-height:1.6}
+
+.tabs{display:flex;border:1.5px solid var(--ink-soft);border-radius:3px;overflow:hidden;margin-bottom:12px;max-width:400px}
+.tab{flex:1;border:0;padding:10px 14px;color:var(--ink-soft);background:transparent;font-weight:700;font-size:14px;min-height:44px}
+.tab+.tab{border-left:1.5px solid var(--ink-soft)}
+.tab.active{background:var(--ink);color:var(--bg)}
+
+.seg{display:flex;border:1.5px solid var(--line-strong);border-radius:3px;overflow:hidden}
+.seg button{flex:1;background:transparent;color:var(--ink-soft);border:0;padding:9px 6px;font-size:13px;font-weight:700;white-space:nowrap;min-height:40px}
+.seg button+button{border-left:1.5px solid var(--line-strong)}
+.seg button.active{background:var(--ink);color:var(--bg)}
+.seg button.earth.active{background:var(--amber);color:#1B1206}
+
+.panel{background:var(--panel);border:1.5px solid var(--line-strong);border-radius:3px;overflow:hidden}
+.panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px 9px}
+.panel-title{font-size:14px;font-weight:700;letter-spacing:.12em;color:var(--ink-soft)}
+
+/* ---------- 3D実験エリア ---------- */
+.stage{position:relative;margin:0 12px;height:clamp(340px,62vh,560px);background:#050B15;border:1.5px solid var(--line-strong);border-radius:3px;overflow:hidden;touch-action:none;user-select:none}
+.stage canvas{display:block;width:100%;height:100%;touch-action:none}
+.label{position:absolute;left:0;top:0;transform:translate(-50%,-50%);pointer-events:none;font-size:12px;font-weight:700;color:var(--ink-soft);white-space:nowrap;text-shadow:0 1px 4px #000}
+.label.moon{color:var(--ink)}
+.label.sun{color:var(--amber-ink)}
+.inset{position:absolute;right:10px;top:10px;width:min(38%,180px);aspect-ratio:1;border:1.5px solid var(--line-strong);border-radius:3px;pointer-events:none}
+.inset .cap{position:absolute;left:0;right:0;top:0;padding:4px 7px;font-size:11px;color:var(--ink-soft);background:#050B15cc;border-bottom:1px solid var(--line)}
+.inset .phase{position:absolute;left:0;right:0;bottom:0;padding:5px 7px;font-size:12.5px;font-weight:700;color:var(--amber-ink);background:#050B15cc;border-top:1px solid var(--line)}
+.inset .outline{position:absolute;left:50%;top:50%;width:59%;aspect-ratio:1;transform:translate(-50%,-50%);border:1.5px dashed #6F87A355;border-radius:50%}
+.stage-helper{position:absolute;left:10px;bottom:10px;background:#050B15d9;border:1px solid var(--line-strong);border-radius:2px;padding:5px 10px;color:var(--ink-soft);font-size:11px;pointer-events:none;max-width:calc(100% - 20px)}
+
+.dock{display:flex;flex-direction:column;gap:10px;padding:12px}
+.dock-row{display:flex;align-items:center;gap:8px;min-width:0}
+.dock-label{flex:0 0 44px;font-size:12px;font-weight:700;color:var(--ink-soft)}
+.grow{flex:1;min-width:0}
+.dock-value{flex:0 0 74px;text-align:right;font-family:var(--mono);font-size:14px}
+.step{flex:0 0 44px;min-height:40px;border:1.5px solid var(--line-strong);background:transparent;color:var(--ink);border-radius:3px;font-size:14px;font-weight:700}
+.step.playing{border-color:var(--amber);color:var(--amber-ink)}
+.range{width:100%;height:34px;margin:0;background:transparent;-webkit-appearance:none;appearance:none;touch-action:pan-y;cursor:pointer}
+.range::-webkit-slider-runnable-track{height:6px;border-radius:3px;background:#22385A;border:1px solid var(--line-strong)}
+.range::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;margin-top:-11px;border-radius:50%;background:var(--amber);border:2.5px solid var(--bg);box-shadow:0 0 0 1.5px var(--amber)}
+.range::-moz-range-track{height:6px;border-radius:3px;background:#22385A;border:1px solid var(--line-strong)}
+.range::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--amber);border:2.5px solid var(--bg)}
+
+.notice{display:flex;gap:10px;align-items:flex-start;background:var(--amber-soft);border:1.5px solid var(--amber);border-radius:3px;padding:11px 13px;font-size:13.5px;color:#F8DDB4;line-height:1.6;margin-top:14px}
+.notice>span:first-child{color:var(--amber)}
+.notice .dismiss{margin-left:auto;flex:0 0 auto;border:0;background:transparent;color:var(--amber-ink);font-size:16px;min-width:32px;min-height:32px}
+
+.mission-panel{padding:14px 15px;margin-bottom:12px}
+.mission-list{display:flex;gap:7px;overflow-x:auto;padding-bottom:4px}
+.mission-btn{border:1.5px solid var(--line-strong);background:transparent;color:var(--ink-soft);padding:8px 12px;border-radius:3px;font-size:12.5px;white-space:nowrap;min-height:38px}
+.mission-btn.active{color:var(--bg);background:var(--ink);border-color:var(--ink)}
+.mission-btn.done{border-color:var(--amber)}
+.mission-title{margin:12px 0 6px;font-size:16px;font-weight:700;letter-spacing:.04em}
+.mission-desc{font-size:13.5px;color:var(--ink-soft);line-height:1.75;margin:0 0 10px}
+.mission-hint{background:var(--panel-2);border:1px solid var(--line-strong);border-radius:3px;font-size:13px;padding:10px 11px;line-height:1.7;margin:10px 0 0}
+.mission-result{background:var(--amber-soft);border:1.5px solid var(--amber);color:#F8DDB4;border-radius:3px;padding:10px 11px;font-size:13.5px;line-height:1.7;margin:10px 0 0}
+.action{border:1.5px solid var(--line-strong);background:transparent;color:var(--ink);border-radius:3px;padding:8px 14px;font-size:13px;font-weight:700;min-height:40px}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+
+details.more{margin-top:14px;padding:13px 15px}
+details.more summary{cursor:pointer;font-size:13.5px;font-weight:700;color:var(--ink-soft);letter-spacing:.06em;list-style:none}
+details.more summary::-webkit-details-marker{display:none}
+details.more summary:before{content:"▸ ";color:var(--amber)}
+details.more[open] summary:before{content:"▾ "}
+.check{font-size:13.5px;display:flex;gap:9px;align-items:center;margin:11px 0}
+.check input{width:18px;height:18px;accent-color:var(--amber)}
+.sw{display:inline-block;width:18px;height:3px;border-radius:2px;vertical-align:middle;margin-right:2px}
+.explain{font-size:13px;color:var(--ink-soft);line-height:1.8;margin:12px 0 0;padding-top:12px;border-top:1px solid var(--line)}
+.explain strong{color:var(--ink)}
+.tiny{font-size:11.5px;color:var(--ink-faint);line-height:1.7}
+
+.toast{position:fixed;z-index:5;bottom:calc(18px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);border-radius:3px;padding:11px 17px;font-size:13.5px;font-weight:700;max-width:90vw;pointer-events:none;box-shadow:0 8px 30px #0008}
+.footer{font-size:11.5px;color:var(--ink-faint);line-height:1.7;padding:18px 4px 0;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.footer .ver{font-family:var(--mono)}
+.error{padding:30px 16px;text-align:center;color:var(--ink-soft);font-size:13.5px;line-height:1.8}
+
+@media(max-width:600px){.stage{height:clamp(320px,112vw,520px)}}
+@media(max-width:400px){.brand h1{font-size:22px}.stage{margin:0 8px}.dock{padding:10px 8px}.seg button{font-size:12px;padding:9px 3px}.dock-value{flex-basis:64px;font-size:13px}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<main class="shell">
+<a class="back" href="https://mifuji310-max.github.io/manabi-lab/">← まなびラボ</a>
+<header class="top"><div class="brand"><h1>月の満ち欠けLAB<span class="en">MOON LAB</span></h1><p>月を動かして、地球からの見え方がどう変わるか確かめよう。</p></div></header>
+
+<div class="tabs"><button class="tab active" id="freeTab">✦ 自由実験</button><button class="tab" id="missionTab">◎ ミッション</button></div>
+
+<section class="panel mission-panel hidden" id="missionPanel">
+  <div class="mission-list" id="missionList"></div>
+  <div class="mission-title" id="missionTitle"></div>
+  <p class="mission-desc" id="missionDesc"></p>
+  <div class="actions"><button class="action" id="hintBtn">ヒントを見る</button><button class="action" id="exitMission">自由実験に戻る</button></div>
+  <div id="missionExtra"></div>
+</section>
+
+<section class="panel">
+  <div class="panel-head"><div class="panel-title">宇宙の実験エリア</div></div>
+  <div class="stage" id="stage">
+    <div class="label sun" id="lblSun">☀ 太陽の光</div>
+    <div class="label" id="lblEarth">地球</div>
+    <div class="label moon" id="lblMoon">月</div>
+    <div class="inset" id="inset"><div class="outline" id="insetOutline"></div><div class="cap" id="insetCap">地球から見た月</div><div class="phase" id="insetPhase"></div></div>
+    <div class="stage-helper" id="helper">☝ 月をつかんで回す ／ 背景ドラッグで視点を回す</div>
+  </div>
+  <div class="dock">
+    <div class="seg" role="group" aria-label="視点">
+      <button id="vTop">上から</button><button id="vSide">横から</button><button id="vFree">ななめ</button><button class="earth" id="vEarth">地球から</button>
+    </div>
+    <div class="dock-row">
+      <span class="dock-label">日数</span>
+      <input class="range grow" type="range" id="day" min="0" max="29.5" step="0.1" value="0" aria-label="新月からの日数"/>
+      <strong class="dock-value" id="dayValue">0.0 日</strong>
+      <button class="step" id="playBtn" aria-label="再生">▷</button>
+    </div>
+  </div>
+</section>
+
+<div class="notice" id="suggestion"><span>✦</span><span id="suggestionText">月をつかんで、地球のまわりを回してみよう。右上の小窓の形はどう変わる？</span><button class="dismiss" id="suggestionClose" aria-label="案内を閉じる">×</button></div>
+
+<details class="panel more" id="more">
+  <summary>見え方のしくみ・表示の設定</summary>
+  <label class="check"><input type="checkbox" id="optRays" checked/> 太陽の光の向き（矢印）</label>
+  <label class="check"><input type="checkbox" id="optLit"/> <span class="sw" style="background:#E0982C"></span>月の「光っている半分」の境目</label>
+  <label class="check"><input type="checkbox" id="optFace"/> <span class="sw" style="background:#7FD8F0"></span>月の「地球に向いている半分」の境目</label>
+  <label class="check"><input type="checkbox" id="optSight"/> 地球から月への視線</label>
+  <p class="explain">月は自分では光らず、<strong>いつも太陽側の半分</strong>が照らされています（オレンジの境目）。地球から見えるのは、月の<strong>地球に向いている半分</strong>（水色の境目）だけです。2つの半分が<strong>重なった部分</strong>が、地球から見える月の形になります。</p>
+  <p class="tiny">モデルの簡略化：太陽・地球・月の大きさと距離は実際の比率ではありません（実際の月は地球から約38万km、太陽はその約400倍遠くにあります）。太陽の光は平行に届くとしています。月の通り道の傾き（約5°）と、地球の自転・公転は省いています。小窓は、日本（北半球）から南の空を見たときの向きです。</p>
+</details>
+
+<div class="footer"><span>月齢（新月からの日数）は、満ち欠けの周期 約29.5日をもとにした目安です。</span><span class="ver" id="ver"></span></div>
+</main>
+<div class="toast hidden" id="toast"></div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const VERSION = 'v0.1.0';
+document.getElementById('ver').textContent = '月の満ち欠けLAB α' + VERSION.slice(1);
+
+const $ = id => document.getElementById(id);
+const PERIOD = 29.53;               // 満ち欠けの周期（日）
+const EARTH_R = 2, MOON_R = 0.62, ORBIT_R = 8.5, SUN_X = -34;
+const SUN_DIR = new THREE.Vector3(-1, 0, 0);   // 地球から見た太陽の方向（画面の左）
+const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ============================================================
+   シーンの組み立て
+   将来の発展（地球の自転・公転・地軸の傾き）に備えて、入れ子の部品にしておく：
+   scene ─ earthOrbit（太陽のまわりの公転：今は止めている）
+             └ earthSystem（地球の位置）
+                 ├ axisTilt（地軸の傾き：今は0°）─ earth（自転：今は止めている）
+                 └ moonOrbit（月の通り道）─ moon
+   ============================================================ */
+const stageEl = $('stage');
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+} catch (e) {
+  stageEl.innerHTML = '<p class="error">このブラウザでは3D表示（WebGL）が使えません。<br>別のブラウザか、新しい端末で開いてみてください。</p>';
+  throw e;
+}
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.autoClear = false;
+stageEl.prepend(renderer.domElement);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(45, 1, 0.05, 400);
+camera.layers.enable(1);                 // レイヤー1＝補助表示（メインの視点だけに映す）
+const insetCam = new THREE.PerspectiveCamera(13, 1, 0.05, 400);
+
+// 光：太陽の方向から平行に届く光＋ごく弱い環境光（暗い側の形が少しだけ分かる程度）
+const sunLight = new THREE.DirectionalLight(0xffffff, 2.6);
+sunLight.position.copy(SUN_DIR).multiplyScalar(50);
+scene.add(sunLight);
+const ambient = new THREE.AmbientLight(0x8fa8c8, 0.14);
+scene.add(ambient);
+
+// 星
+{
+  const n = 700, pos = new Float32Array(n * 3);
+  let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  for (let i = 0; i < n; i++) {
+    const u = rnd() * 2 - 1, t = rnd() * Math.PI * 2, r = 180;
+    pos[i * 3] = r * Math.sqrt(1 - u * u) * Math.cos(t); pos[i * 3 + 1] = r * u; pos[i * 3 + 2] = r * Math.sqrt(1 - u * u) * Math.sin(t);
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  scene.add(new THREE.Points(g, new THREE.PointsMaterial({ color: 0x9fb4cc, size: 0.7, sizeAttenuation: true })));
+}
+
+// 模様のテクスチャはキャンバスで作る（外部画像なし）
+function makeTexture(draw, w = 512, h = 256) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  draw(c.getContext('2d'), w, h);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+let s2 = 11; const rnd2 = () => (s2 = (s2 * 16807) % 2147483647) / 2147483647;
+const earthTex = makeTexture((g, w, h) => {
+  g.fillStyle = '#1f5f9e'; g.fillRect(0, 0, w, h);
+  g.fillStyle = '#3f8a4f';
+  for (let i = 0; i < 26; i++) {
+    const x = rnd2() * w, y = h * (.22 + rnd2() * .56), rx = 18 + rnd2() * 46, ry = 10 + rnd2() * 26;
+    g.beginPath(); g.ellipse(x, y, rx, ry, rnd2() * 3, 0, Math.PI * 2); g.fill();
+  }
+  g.fillStyle = '#e8f0f6'; g.fillRect(0, 0, w, h * .07); g.fillRect(0, h * .93, w, h * .07);
+  g.globalAlpha = .35; g.fillStyle = '#ffffff';
+  for (let i = 0; i < 40; i++) { g.beginPath(); g.ellipse(rnd2() * w, rnd2() * h, 20 + rnd2() * 40, 3 + rnd2() * 5, 0, 0, Math.PI * 2); g.fill(); }
+});
+const moonTex = makeTexture((g, w, h) => {
+  g.fillStyle = '#b9b6ae'; g.fillRect(0, 0, w, h);
+  for (let i = 0; i < 90; i++) {
+    const x = rnd2() * w, y = rnd2() * h, r = 3 + rnd2() * (i < 8 ? 34 : 12);
+    g.fillStyle = i < 8 ? '#8f8c86' : (rnd2() < .5 ? '#a19e97' : '#cdcac2'); g.globalAlpha = i < 8 ? .7 : .6;
+    g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
+  }
+});
+
+const earthOrbit = new THREE.Group(); scene.add(earthOrbit);
+const earthSystem = new THREE.Group(); earthOrbit.add(earthSystem);
+const axisTilt = new THREE.Group(); earthSystem.add(axisTilt);
+const earth = new THREE.Mesh(new THREE.SphereGeometry(EARTH_R, 128, 96), new THREE.MeshStandardMaterial({ map: earthTex, roughness: 1, metalness: 0 }));
+axisTilt.add(earth);
+const moonOrbit = new THREE.Group(); earthSystem.add(moonOrbit);
+const moon = new THREE.Mesh(new THREE.SphereGeometry(MOON_R, 40, 28), new THREE.MeshStandardMaterial({ map: moonTex, roughness: 1, metalness: 0 }));
+moonOrbit.add(moon);
+// 指でつかみやすいよう、月より大きい透明な「つかみ判定」（レイヤー2：画面には映らない）
+const moonGrip = new THREE.Mesh(new THREE.SphereGeometry(MOON_R * 2.6, 12, 8), new THREE.MeshBasicMaterial());
+moonGrip.layers.set(2); moon.add(moonGrip);
+
+// 太陽（大きさ・距離は実際の比率ではない）
+const sun = new THREE.Mesh(new THREE.SphereGeometry(2.6, 32, 20), new THREE.MeshBasicMaterial({ color: 0xffd36e }));
+sun.position.set(SUN_X, 0, 0); scene.add(sun);
+// 太陽はレイヤー3。地球からの視点と小窓には映さない（新月で月の後ろに太陽が重なり、日食と誤解しやすいため。
+// 実際は月の通り道が約5°傾いているので、新月のたびに日食にはならない）
+{
+  const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
+  const gr = g.createRadialGradient(64, 64, 8, 64, 64, 64); gr.addColorStop(0, '#ffe7a3ff'); gr.addColorStop(.35, '#f5b64a88'); gr.addColorStop(1, '#f5b64a00');
+  g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
+  const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), depthWrite: false, transparent: true }));
+  glow.scale.set(16, 16, 1); sun.add(glow);
+}
+sun.traverse(o => o.layers.set(3));
+camera.layers.enable(3);
+
+/* ---------- 補助表示（レイヤー1） ---------- */
+function onHelperLayer(obj) { obj.traverse(o => o.layers.set(1)); return obj; }
+// 月の通り道と、8つの位置の目印
+const orbitLine = onHelperLayer(new THREE.LineLoop(
+  new THREE.BufferGeometry().setFromPoints(Array.from({ length: 128 }, (_, i) => new THREE.Vector3(Math.cos(i / 128 * Math.PI * 2) * ORBIT_R, 0, Math.sin(i / 128 * Math.PI * 2) * ORBIT_R))),
+  new THREE.LineBasicMaterial({ color: 0x3e5f84 })));
+moonOrbit.add(orbitLine);
+for (let k = 0; k < 8; k++) {
+  const a = k / 8 * Math.PI * 2, dot = onHelperLayer(new THREE.Mesh(new THREE.SphereGeometry(.09, 8, 6), new THREE.MeshBasicMaterial({ color: 0x5c7996 })));
+  dot.position.set(Math.cos(a) * ORBIT_R, 0, Math.sin(a) * ORBIT_R); moonOrbit.add(dot);
+}
+// 太陽の光の矢印
+const rays = onHelperLayer(new THREE.Group());
+for (const z of [-8, -4, 0, 4, 8]) {
+  const arrow = new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), new THREE.Vector3(-24, 0, z), 7, 0xe0982c, 1.1, .55);
+  arrow.line.material.transparent = true; arrow.line.material.opacity = .7;
+  rays.add(arrow);
+}
+onHelperLayer(rays); scene.add(rays);
+// 月の上の2つの境目（光っている半分／地球に向いている半分）
+const ringGeo = new THREE.TorusGeometry(MOON_R * 1.07, .028, 8, 96);
+const litRing = onHelperLayer(new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: 0xe0982c })));
+const faceRing = onHelperLayer(new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: 0x7fd8f0 })));
+scene.add(litRing, faceRing);
+// 地球から月への視線
+const sightGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+const sight = onHelperLayer(new THREE.Line(sightGeo, new THREE.LineDashedMaterial({ color: 0x7fd8f0, dashSize: .35, gapSize: .25 })));
+scene.add(sight);
+
+/* ============================================================
+   状態
+   ============================================================ */
+const state = { day: 0, playing: false, view: 'free', anim: null, dragging: false };
+const Z_AXIS = new THREE.Vector3(0, 0, 1);
+const tmpV = new THREE.Vector3(), moonWorld = new THREE.Vector3();
+
+// 新月からの日数 → 月の位置。上から見て反時計回り（北極側から見た公転の向き）
+function moonAngle(day) { return Math.PI + 2 * Math.PI * day / PERIOD; }
+function dayFromAngle(a) { let d = ((a - Math.PI) / (2 * Math.PI)) * PERIOD; d = ((d % PERIOD) + PERIOD) % PERIOD; return Math.min(d, 29.5); }
+function placeMoon() {
+  const a = moonAngle(state.day);
+  moon.position.set(Math.cos(a) * ORBIT_R, 0, -Math.sin(a) * ORBIT_R);
+  moon.getWorldPosition(moonWorld);
+  // 境目の輪：輪の軸を「太陽の方向」「地球の方向」に合わせる
+  litRing.position.copy(moonWorld); litRing.quaternion.setFromUnitVectors(Z_AXIS, SUN_DIR);
+  faceRing.position.copy(moonWorld); faceRing.quaternion.setFromUnitVectors(Z_AXIS, tmpV.copy(moonWorld).negate().normalize());
+  const p = sightGeo.attributes.position;
+  tmpV.copy(moonWorld).normalize().multiplyScalar(EARTH_R);
+  p.setXYZ(0, tmpV.x, tmpV.y, tmpV.z); p.setXYZ(1, moonWorld.x, moonWorld.y, moonWorld.z); p.needsUpdate = true;
+  sight.computeLineDistances();
+}
+
+// 月の形の名前（覚えるためではなく、補助として表示）
+function phaseName(d) {
+  if (d < 1.5 || d >= 28.3) return '新月';
+  if (d < 5) return '三日月のころ';
+  if (d < 6.4) return '上弦に近い月';
+  if (d < 8.4) return '上弦の月（半月）';
+  if (d < 13.5) return '満月に近づく月';
+  if (d < 16) return '満月';
+  if (d < 21.1) return '下弦に近づく月';
+  if (d < 23.1) return '下弦の月（半月）';
+  return '明け方の細い月';
+}
+
+/* ---------- 地球（北半球）の観測者 ---------- */
+const OBS_LAT = THREE.MathUtils.degToRad(68);   // 月が南の空の低いところに見え、地平線も映る位置
+function observer(outPos, outUp) {
+  const m = tmpV.copy(moonWorld).setY(0).normalize();
+  const up = new THREE.Vector3().copy(m).multiplyScalar(Math.cos(OBS_LAT)).add(new THREE.Vector3(0, Math.sin(OBS_LAT), 0)).normalize();
+  outUp.copy(up);
+  outPos.copy(up).multiplyScalar(EARTH_R + .05);
+}
+
+/* ============================================================
+   カメラと視点の切り替え
+   ============================================================ */
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.dampingFactor = .08;
+controls.enablePan = false; controls.minDistance = 6; controls.maxDistance = 90;
+
+function fitDistance() {
+  const aspect = camera.aspect, half = THREE.MathUtils.degToRad(45 / 2);
+  return (ORBIT_R + 2.6) / Math.tan(half) / Math.min(aspect, 1);
+}
+function presetPose(view) {
+  const d = fitDistance();
+  if (view === 'top') return { pos: new THREE.Vector3(0, d, d * 0.004), up: new THREE.Vector3(0, 1, 0), fov: 45 };
+  if (view === 'side') return { pos: new THREE.Vector3(0, d * 0.12, d), up: new THREE.Vector3(0, 1, 0), fov: 45 };
+  return { pos: new THREE.Vector3(d * 0.2, d * 0.62, d * 0.78), up: new THREE.Vector3(0, 1, 0), fov: 45 };
+}
+const easeInOut = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+// 視点を滑らかに動かす。「地球から」へ向かうときは、動いている間ずっと月を見つめ続ける（ギューン）
+function goView(view) {
+  if (state.dragging) return;
+  const from = { pos: camera.position.clone(), up: camera.up.clone(), fov: camera.fov, target: currentTarget.clone() };
+  state.view = view;
+  controls.enabled = false;
+  const toEarth = view === 'earth';
+  if (!toEarth) { camera.layers.enable(3); camera.layers.enable(1); }
+  const goal = () => {
+    if (toEarth) { const pos = new THREE.Vector3(), up = new THREE.Vector3(); observer(pos, up); return { pos, up, fov: 55, target: moonWorld.clone() }; }
+    const p = presetPose(view); return { ...p, target: new THREE.Vector3() };
+  };
+  const dur = reduceMotion ? 0 : (toEarth ? 2000 : 1300);
+  state.anim = { from, goal, toEarth, start: performance.now(), dur };
+  updateUI();
+}
+const currentTarget = new THREE.Vector3();
+
+function stepAnimation(now) {
+  const a = state.anim; if (!a) return;
+  const raw = a.dur === 0 ? 1 : Math.min(1, (now - a.start) / a.dur), t = easeInOut(raw);
+  const g = a.goal();
+  // 位置：方向は球面に沿って回し、距離は「対数」で縮める → 最後にグッと近づく
+  const r0 = a.from.pos.length(), r1 = g.pos.length();
+  const dir = a.from.pos.clone().normalize();
+  const q = new THREE.Quaternion().setFromUnitVectors(dir, g.pos.clone().normalize());
+  dir.applyQuaternion(new THREE.Quaternion().slerp(q, t));
+  camera.position.copy(dir.multiplyScalar(r0 * Math.pow(r1 / r0, t)));
+  camera.up.copy(a.from.up).lerp(g.up, t).normalize();
+  camera.fov = a.from.fov + (g.fov - a.from.fov) * t; camera.updateProjectionMatrix();
+  // 見つめる先：地球へ向かうときは最初の2割で月に視線を移し、あとはずっと月
+  const tt = a.toEarth ? Math.min(1, raw / .2) : t;
+  currentTarget.copy(a.from.target).lerp(g.target, easeInOut(tt));
+  camera.lookAt(currentTarget);
+  if (raw >= 1) {
+    state.anim = null;
+    // 地球に着いたら、太陽と補助表示（矢印・通り道）を消して、空に浮かぶ月だけにする
+    if (a.toEarth) { camera.layers.disable(3); camera.layers.disable(1); }
+    afterChange();
+    if (!a.toEarth) { camera.up.set(0, 1, 0); controls.target.set(0, 0, 0); currentTarget.set(0, 0, 0); controls.enabled = true; controls.update(); }
+  }
+}
+
+/* ============================================================
+   月をつかんで回す（OrbitControlsより先にイベントを受け取る）
+   ============================================================ */
+const raycaster = new THREE.Raycaster(); raycaster.layers.set(2);
+const ndc = new THREE.Vector2(), plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), hit = new THREE.Vector3();
+function setNdc(e) { const r = renderer.domElement.getBoundingClientRect(); ndc.set((e.clientX - r.left) / r.width * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1); }
+renderer.domElement.addEventListener('pointerdown', e => {   // capture: OrbitControls より先に判定する
+  if (state.view === 'earth' || state.anim) return;
+  setNdc(e); raycaster.setFromCamera(ndc, camera);
+  if (raycaster.intersectObject(moonGrip, false).length) {
+    state.dragging = true; controls.enabled = false; stopPlay();
+    try { renderer.domElement.setPointerCapture(e.pointerId); } catch (err) { /* 指が離れた直後など */ }
+    renderer.domElement.style.cursor = 'grabbing';
+  }
+}, { capture: true });
+renderer.domElement.addEventListener('pointermove', e => {
+  if (!state.dragging) {
+    if (state.view !== 'earth' && !state.anim && e.pointerType === 'mouse') {
+      setNdc(e); raycaster.setFromCamera(ndc, camera);
+      renderer.domElement.style.cursor = raycaster.intersectObject(moonGrip, false).length ? 'grab' : '';
+    }
+    return;
+  }
+  setNdc(e); raycaster.setFromCamera(ndc, camera);
+  // 真横から見ているときは通り道の面がつぶれて見えるので、面に当たらなければ動かさない
+  if (raycaster.ray.intersectPlane(plane, hit) && hit.length() > 0.5) {
+    setDay(dayFromAngle(Math.atan2(-hit.z, hit.x)));
+  }
+});
+function endDrag() { if (!state.dragging) return; state.dragging = false; controls.enabled = state.view !== 'earth'; renderer.domElement.style.cursor = ''; afterChange(); }
+renderer.domElement.addEventListener('pointerup', endDrag);
+renderer.domElement.addEventListener('pointercancel', endDrag);
+
+/* ============================================================
+   画面の部品
+   ============================================================ */
+function setDay(d) {
+  state.day = Math.max(0, Math.min(29.5, d));
+  placeMoon(); updateUI();
+}
+function updateUI() {
+  $('day').value = String(state.day);
+  $('dayValue').textContent = state.day.toFixed(1) + ' 日';
+  const name = phaseName(state.day);
+  const earthView = state.view === 'earth';
+  $('insetPhase').textContent = earthView ? '' : name;
+  $('insetPhase').classList.toggle('hidden', earthView);
+  $('insetCap').textContent = earthView ? '宇宙の上から見た位置' : '地球から見た月';
+  $('insetOutline').classList.toggle('hidden', earthView);
+  for (const [id, v] of [['vTop', 'top'], ['vSide', 'side'], ['vFree', 'free'], ['vEarth', 'earth']]) $(id).classList.toggle('active', state.view === v);
+  $('helper').textContent = earthView ? `地球（日本）から南の空の月を見ています ― ${name}` : '☝ 月をつかんで回す ／ 背景ドラッグで視点を回す';
+  $('playBtn').textContent = state.playing ? '❚❚' : '▷';
+  $('playBtn').classList.toggle('playing', state.playing);
+  rays.visible = $('optRays').checked;
+  litRing.visible = $('optLit').checked;
+  faceRing.visible = $('optFace').checked;
+  sight.visible = $('optSight').checked;
+}
+function stopPlay() { state.playing = false; updateUI(); }
+
+$('day').addEventListener('input', e => { stopPlay(); setDay(Number(e.target.value)); });
+$('day').addEventListener('change', () => afterChange());
+$('playBtn').addEventListener('click', () => { state.playing = !state.playing; if (state.playing && state.day >= 29.4) setDay(0); updateUI(); });
+$('vTop').addEventListener('click', () => goView('top'));
+$('vSide').addEventListener('click', () => goView('side'));
+$('vFree').addEventListener('click', () => goView('free'));
+$('vEarth').addEventListener('click', () => goView('earth'));
+for (const id of ['optRays', 'optLit', 'optFace', 'optSight']) $(id).addEventListener('change', () => { updateUI(); afterChange(); });
+$('suggestionClose').addEventListener('click', () => $('suggestion').classList.add('hidden', 'dismissed'));
+
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.remove('hidden'); clearTimeout(toast.timer); toast.timer = setTimeout(() => t.classList.add('hidden'), 2600); }
+
+/* ---------- 案内（自由実験中のヒント） ---------- */
+const seen = new Set();
+function suggest() {
+  if (state.mission || $('suggestion').classList.contains('dismissed')) return;
+  const d = state.day;
+  let msg = null;
+  if (!seen.has('half') && Math.abs(d - 7.4) < 1) msg = ['half', '半月になった！ このとき、上から見ると「太陽・地球・月」はどんな角度に並んでいる？'];
+  else if (!seen.has('full') && Math.abs(d - 14.8) < 1) msg = ['full', '満月！ 月は地球から見て、太陽と反対側にあるね。「地球から」ボタンでも確かめてみよう。'];
+  else if (!seen.has('rings') && seen.has('half')) msg = ['rings', '「見え方のしくみ」を開いて、月の上の2つの境目を表示してみよう。重なった部分が、見える形です。'];
+  else if (!seen.has('earth') && state.view !== 'earth' && seen.size >= 2) msg = ['earth', '「地球から」を押すと、地球から月を見た様子に切り替わります。'];
+  if (msg) { seen.add(msg[0]); $('suggestionText').textContent = msg[1]; $('suggestion').classList.remove('hidden'); }
+}
+
+/* ---------- ミッション（やってもやらなくてもよい） ---------- */
+const MISSIONS = [
+  { id: 'M1', title: '上弦の月をつくろう', desc: '右半分が光る「上弦の月」にするには、月をどこに置けばいい？ まず予想してから、月を動かして確かめよう。',
+    hint: '「上から」の視点にして、太陽の光の向きと、地球から月への向きの角度に注目しよう。', ok: () => Math.abs(state.day - 7.4) < .8,
+    summary: '上弦の月は、太陽・地球・月が直角（90°）に並んだとき。月の光っている半分のうち、ちょうど半分が地球に向いています。' },
+  { id: 'M2', title: '満月のとき、月はどこ？', desc: '満月のとき、月は地球から見て太陽と同じ側？ 反対側？ 予想してから、満月をつくって確かめよう。',
+    hint: '月の光っている半分が、まるごと地球に向くのはどんなときかな。', ok: () => Math.abs(state.day - 14.8) < .8,
+    summary: '満月は、月が地球をはさんで太陽の反対側にあるとき。光っている半分が、まるごと地球に向いています。' },
+  { id: 'M3', title: '新月が見えない理由', desc: '新月にして、「地球から」の視点で月を見てみよう。月はどうなっている？ 太陽の光は月のどこに当たっている？',
+    hint: '日数を0日にしてから「地球から」を押そう。「見え方のしくみ」で2つの境目を表示すると分かりやすいよ。', ok: () => (state.day < 1 || state.day > 28.5) && state.view === 'earth' && !state.anim,
+    summary: '新月のとき、月は太陽と地球のあいだにあり、光っている半分は太陽側＝地球の反対側を向いています。地球には光っていない側しか向いていないので見えません。' }
+];
+state.mission = null; state.hint = false;
+const done = new Set();
+function renderMissionList() {
+  $('missionList').innerHTML = '';
+  for (const m of MISSIONS) {
+    const b = document.createElement('button');
+    b.className = 'mission-btn' + (state.mission === m.id ? ' active' : '') + (done.has(m.id) ? ' done' : '');
+    b.textContent = (done.has(m.id) ? '✓ ' : '') + m.title;
+    b.addEventListener('click', () => startMission(m.id));
+    $('missionList').appendChild(b);
+  }
+}
+function startMission(id) {
+  state.mission = id; state.hint = false;
+  const m = MISSIONS.find(x => x.id === id);
+  $('missionTitle').textContent = m.title; $('missionDesc').textContent = m.desc; $('missionExtra').innerHTML = '';
+  $('missionPanel').classList.remove('hidden'); $('suggestion').classList.add('hidden');
+  $('freeTab').classList.remove('active'); $('missionTab').classList.add('active');
+  renderMissionList();
+}
+function exitMission() {
+  state.mission = null; $('missionPanel').classList.add('hidden');
+  $('missionTab').classList.remove('active'); $('freeTab').classList.add('active');
+}
+function checkMission() {
+  if (!state.mission) return;
+  const m = MISSIONS.find(x => x.id === state.mission);
+  if (m.ok() && !$('missionExtra').querySelector('.mission-result')) {
+    done.add(m.id);
+    const div = document.createElement('div'); div.className = 'mission-result'; div.textContent = '✓ できた！ ' + m.summary;
+    $('missionExtra').appendChild(div); renderMissionList(); toast('ミッション達成！');
+  }
+}
+$('missionTab').addEventListener('click', () => startMission(state.mission || 'M1'));
+$('freeTab').addEventListener('click', exitMission);
+$('exitMission').addEventListener('click', exitMission);
+$('hintBtn').addEventListener('click', () => {
+  const m = MISSIONS.find(x => x.id === state.mission); if (!m || $('missionExtra').querySelector('.mission-hint')) return;
+  const div = document.createElement('div'); div.className = 'mission-hint'; div.textContent = 'ヒント：' + m.hint; $('missionExtra').prepend(div);
+});
+function afterChange() { suggest(); checkMission(); }
+
+/* ============================================================
+   描画
+   ============================================================ */
+const labels = { sun: $('lblSun'), earth: $('lblEarth'), moon: $('lblMoon') };
+function placeLabel(el, world, dy, clampEdge) {
+  const v = world.clone().project(camera), w = stageEl.clientWidth, h = stageEl.clientHeight;
+  let x = (v.x + 1) / 2 * w, y = (1 - v.y) / 2 * h + dy;
+  const behind = v.z > 1;
+  if (clampEdge) { x = Math.max(56, Math.min(w - 56, x)); y = Math.max(16, Math.min(h - 16, y)); }
+  el.style.visibility = behind ? 'hidden' : 'visible';
+  el.style.transform = `translate(${x}px,${y}px) translate(-50%,-50%)`;
+}
+
+function resize() {
+  const w = stageEl.clientWidth, h = stageEl.clientHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h; camera.updateProjectionMatrix();
+}
+let firstFit = true;
+function fitInitial() {
+  const p = presetPose('free'); camera.position.copy(p.pos); camera.up.copy(p.up); controls.target.set(0, 0, 0); controls.update();
+}
+new ResizeObserver(() => { resize(); if (firstFit) { fitInitial(); firstFit = false; } }).observe(stageEl);
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(.1, (now - last) / 1000); last = now;
+  if (state.playing) {
+    let d = state.day + dt * 2.4;
+    if (d >= 29.5) { d = 29.5; state.playing = false; }
+    setDay(d); afterChange();
+  }
+  if (state.anim) stepAnimation(now);
+  else if (state.view === 'earth') {
+    // 地球からの視点：月が動いても、観測者は月の見える場所に立ち、ずっと月を見つめる
+    const pos = new THREE.Vector3(), up = new THREE.Vector3(); observer(pos, up);
+    camera.position.copy(pos); camera.up.copy(up); currentTarget.copy(moonWorld); camera.lookAt(moonWorld);
+  } else { controls.update(); currentTarget.copy(controls.target); }
+
+  const w = stageEl.clientWidth, h = stageEl.clientHeight;
+  renderer.setScissorTest(false);
+  renderer.setViewport(0, 0, w, h);
+  renderer.setClearColor(0x050b15, 1); renderer.clear();
+  const inEarthView = state.view === 'earth' && !state.anim;
+  ambient.intensity = inEarthView ? .03 : .14;
+  renderer.render(scene, camera);
+
+  // 右上の小窓
+  const ins = $('inset').getBoundingClientRect(), st = stageEl.getBoundingClientRect();
+  const ix = ins.left - st.left + 1.5, iy = ins.top - st.top + 1.5, iw = ins.width - 3, ih = ins.height - 3;
+  renderer.setScissorTest(true);
+  renderer.setScissor(ix, h - iy - ih, iw, ih); renderer.setViewport(ix, h - iy - ih, iw, ih);
+  renderer.setClearColor(0x02060d, 1); renderer.clear();
+  if (state.view === 'earth') {
+    // 地球から見ているあいだは、小窓に「宇宙の上から見た位置」を出して対応を見比べられるようにする
+    const d = ORBIT_R + 3;
+    insetCam.fov = 2 * THREE.MathUtils.radToDeg(Math.atan(d / (d * 2.4)));
+    insetCam.position.set(0, d * 2.4, .001); insetCam.up.set(0, 1, 0); insetCam.lookAt(0, 0, 0);
+    insetCam.layers.enable(1);
+    ambient.intensity = .14;
+  } else {
+    const pos = new THREE.Vector3(), up = new THREE.Vector3(); observer(pos, up);
+    insetCam.fov = 14; insetCam.position.copy(pos); insetCam.up.copy(up); insetCam.lookAt(moonWorld);
+    insetCam.layers.disable(1);
+    ambient.intensity = .025;   // 小窓では、光っていない側はほぼ見えない
+  }
+  insetCam.aspect = iw / ih; insetCam.updateProjectionMatrix();
+  renderer.render(scene, insetCam);
+  ambient.intensity = .14;
+
+  // ラベル
+  const earthView = state.view === 'earth';
+  labels.sun.classList.toggle('hidden', earthView); labels.earth.classList.toggle('hidden', earthView);
+  if (!earthView) {
+    placeLabel(labels.sun, sun.position, -26, true);
+    placeLabel(labels.earth, new THREE.Vector3(0, EARTH_R, 0), -16, false);
+  }
+  placeLabel(labels.moon, moonWorld, earthView ? -70 : -28, false);
+  requestAnimationFrame(frame);
+}
+
+placeMoon(); updateUI(); renderMissionList();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
