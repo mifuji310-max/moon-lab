@@ -170,7 +170,7 @@ details.more[open] summary:before{content:"▾ "}
   <label class="check"><input type="checkbox" id="optFace"/> <span class="sw" style="background:#7FD8F0"></span>月の「地球に向いている半分」の境目</label>
   <label class="check"><input type="checkbox" id="optSight"/> 地球から月への視線</label>
   <p class="explain">月は自分では光らず、<strong>いつも太陽側の半分</strong>が照らされています（オレンジの境目）。地球から見えるのは、月の<strong>地球に向いている半分</strong>（水色の境目）だけです。2つの半分が<strong>重なった部分</strong>が、地球から見える月の形になります。</p>
-  <p class="tiny">モデルの簡略化：太陽・地球・月の大きさと距離は実際の比率ではありません（実際の月は地球から約38万km、太陽はその約400倍遠くにあります）。太陽の光は平行に届くとしています。月の通り道の傾き（約5°）と、地球の自転・公転は省いています。小窓は、日本（北半球）から南の空を見たときの向きです。</p>
+  <p class="tiny">モデルの簡略化：太陽・地球・月の大きさと距離は実際の比率ではありません（実際の月は地球から約38万km、太陽はその約400倍遠くにあります）。太陽の光は平行に届くとしています。月の通り道の傾き（約5°）と、地球の自転・公転は省いています。月は公転と同じ周期で自転しているため、いつも同じ面（暗い模様の多い表側）を地球に向けています。小窓は、日本（北半球）から南の空を見たときの向きです。</p>
 </details>
 
 <div class="footer"><span>月齢（新月からの日数）は、満ち欠けの周期 約29.5日をもとにした目安です。</span><span class="ver" id="ver"></span></div>
@@ -181,7 +181,7 @@ details.more[open] summary:before{content:"▾ "}
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-const VERSION = 'v0.1.0';
+const VERSION = 'v0.1.1';
 document.getElementById('ver').textContent = '月の満ち欠けLAB α' + VERSION.slice(1);
 
 const $ = id => document.getElementById(id);
@@ -252,12 +252,18 @@ const earthTex = makeTexture((g, w, h) => {
   g.globalAlpha = .35; g.fillStyle = '#ffffff';
   for (let i = 0; i < 40; i++) { g.beginPath(); g.ellipse(rnd2() * w, rnd2() * h, 20 + rnd2() * 40, 3 + rnd2() * 5, 0, 0, Math.PI * 2); g.fill(); }
 });
+// 月の模様。テクスチャの中央（u=0.5）が月の「表側」＝いつも地球に向いている面。
+// 表側には海（暗い模様）を集めて、いつも同じ面が地球を向いていることが見て分かるようにする
 const moonTex = makeTexture((g, w, h) => {
-  g.fillStyle = '#b9b6ae'; g.fillRect(0, 0, w, h);
-  for (let i = 0; i < 90; i++) {
-    const x = rnd2() * w, y = rnd2() * h, r = 3 + rnd2() * (i < 8 ? 34 : 12);
-    g.fillStyle = i < 8 ? '#8f8c86' : (rnd2() < .5 ? '#a19e97' : '#cdcac2'); g.globalAlpha = i < 8 ? .7 : .6;
+  g.fillStyle = '#bdbab2'; g.fillRect(0, 0, w, h);
+  for (let i = 0; i < 70; i++) {
+    const x = rnd2() * w, y = rnd2() * h, r = 2 + rnd2() * 9;
+    g.fillStyle = rnd2() < .5 ? '#a8a59e' : '#d2cfc7'; g.globalAlpha = .6;
     g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
+  }
+  g.fillStyle = '#86837d'; g.globalAlpha = .55;
+  for (const [x, y, rx, ry] of [[.47, .36, .07, .09], [.55, .42, .05, .06], [.43, .52, .08, .07], [.53, .58, .06, .1], [.6, .5, .04, .05], [.38, .4, .04, .05]]) {
+    g.beginPath(); g.ellipse(x * w, y * h, rx * w, ry * h, 0, 0, Math.PI * 2); g.fill();
   }
 });
 
@@ -330,6 +336,8 @@ function dayFromAngle(a) { let d = ((a - Math.PI) / (2 * Math.PI)) * PERIOD; d =
 function placeMoon() {
   const a = moonAngle(state.day);
   moon.position.set(Math.cos(a) * ORBIT_R, 0, -Math.sin(a) * ORBIT_R);
+  // 月は公転1回のあいだに自転も1回する（同じ周期）ので、いつも同じ面（表側）が地球を向く
+  moon.rotation.y = a + Math.PI;
   moon.getWorldPosition(moonWorld);
   // 境目の輪：輪の軸を「太陽の方向」「地球の方向」に合わせる
   litRing.position.copy(moonWorld); litRing.quaternion.setFromUnitVectors(Z_AXIS, SUN_DIR);
@@ -393,27 +401,43 @@ function goView(view) {
     if (toEarth) { const pos = new THREE.Vector3(), up = new THREE.Vector3(); observer(pos, up); return { pos, up, fov: 55, target: moonWorld.clone() }; }
     const p = presetPose(view); return { ...p, target: new THREE.Vector3() };
   };
-  const dur = reduceMotion ? 0 : (toEarth ? 2000 : 1300);
-  state.anim = { from, goal, toEarth, start: performance.now(), dur };
+  const fromEarth = !toEarth && from.pos.length() < EARTH_R + 1;
+  const dur = reduceMotion ? 0 : (toEarth ? 3600 : fromEarth ? 2400 : 1300);
+  state.anim = { from, goal, toEarth, fromEarth, start: performance.now(), dur };
   updateUI();
 }
 const currentTarget = new THREE.Vector3();
 
+const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+const HOVER_R = EARTH_R + 6;   // 地球に降りる前に、いったん止まる「地球の上空」の高さ
+
 function stepAnimation(now) {
   const a = state.anim; if (!a) return;
-  const raw = a.dur === 0 ? 1 : Math.min(1, (now - a.start) / a.dur), t = easeInOut(raw);
+  const raw = a.dur === 0 ? 1 : Math.min(1, (now - a.start) / a.dur);
   const g = a.goal();
-  // 位置：方向は球面に沿って回し、距離は「対数」で縮める → 最後にグッと近づく
   const r0 = a.from.pos.length(), r1 = g.pos.length();
-  const dir = a.from.pos.clone().normalize();
-  const q = new THREE.Quaternion().setFromUnitVectors(dir, g.pos.clone().normalize());
-  dir.applyQuaternion(new THREE.Quaternion().slerp(q, t));
-  camera.position.copy(dir.multiplyScalar(r0 * Math.pow(r1 / r0, t)));
-  camera.up.copy(a.from.up).lerp(g.up, t).normalize();
-  camera.fov = a.from.fov + (g.fov - a.from.fov) * t; camera.updateProjectionMatrix();
-  // 見つめる先：地球へ向かうときは最初の2割で月に視線を移し、あとはずっと月
-  const tt = a.toEarth ? Math.min(1, raw / .2) : t;
-  currentTarget.copy(a.from.target).lerp(g.target, easeInOut(tt));
+  const dir0 = a.from.pos.clone().normalize(), dir1 = g.pos.clone().normalize();
+  const turn = new THREE.Quaternion().setFromUnitVectors(dir0, dir1);
+  let kDir, r, kUp, kFov, kTarget;
+  if (a.toEarth) {
+    // ① 今の視点のまま月へ視線を移しつつ、日本の上空へ回り込む → ② 上空から地上へ降りる
+    kTarget = smooth(0, .35, raw);
+    kDir = smooth(0, .7, raw);
+    r = raw < .55 ? r0 + (HOVER_R - r0) * smooth(0, .55, raw) : HOVER_R + (r1 - HOVER_R) * smooth(.55, 1, raw);
+    kUp = smooth(.5, 1, raw); kFov = smooth(.45, 1, raw);
+  } else if (a.fromEarth) {
+    // 地上 → 上空へ上がる → いつもの視点へ戻る（地球にもぐらないよう、先に高さをとる）
+    kDir = smooth(.3, 1, raw);
+    r = raw < .4 ? r0 + (HOVER_R - r0) * smooth(0, .4, raw) : HOVER_R + (r1 - HOVER_R) * smooth(.4, 1, raw);
+    kUp = smooth(0, .45, raw); kFov = smooth(0, .5, raw); kTarget = smooth(.45, 1, raw);
+  } else {
+    const t = easeInOut(raw);
+    kDir = t; r = r0 + (r1 - r0) * t; kUp = t; kFov = t; kTarget = t;
+  }
+  camera.position.copy(dir0.applyQuaternion(new THREE.Quaternion().slerp(turn, kDir)).multiplyScalar(r));
+  camera.up.copy(a.from.up).lerp(g.up, kUp).normalize();
+  camera.fov = a.from.fov + (g.fov - a.from.fov) * kFov; camera.updateProjectionMatrix();
+  currentTarget.copy(a.from.target).lerp(g.target, kTarget);
   camera.lookAt(currentTarget);
   if (raw >= 1) {
     state.anim = null;
