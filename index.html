@@ -64,11 +64,13 @@ button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible{o
 .label.japan{color:var(--amber-ink)}
 .label.dir{font-size:14px;color:#FFE2B0;text-shadow:0 1px 5px #000,0 0 2px #000}
 .label.below{color:var(--cyan)}
-.stage-seg{max-width:480px;margin-bottom:12px}
+.stage-seg{max-width:560px;margin-bottom:12px}
 .date{flex:1;min-width:0;min-height:40px;background:var(--panel-2);color:var(--ink);border:1.5px solid var(--line-strong);border-radius:3px;padding:6px 8px;color-scheme:dark;font-family:var(--mono);font-size:14px}
 .dock-value.age{flex-basis:86px}
 .today{flex:0 0 auto;min-height:40px;border:1.5px solid var(--line-strong);background:transparent;color:var(--ink);border-radius:3px;font-size:13px;font-weight:700;padding:0 10px}
 .season-info{margin:0;font-size:12.5px;color:var(--amber-ink);line-height:1.6}
+.inset canvas.ecl{position:absolute;left:0;top:0;width:100%;height:100%;display:block}
+.ecl-btn{flex:1;min-height:40px;border:1.5px solid var(--amber);background:transparent;color:var(--amber-ink);border-radius:3px;font-size:13px;font-weight:700}
 .inset{position:absolute;right:10px;top:10px;width:min(38%,180px);aspect-ratio:1;border:1.5px solid var(--line-strong);border-radius:3px;pointer-events:none}
 .inset .cap{position:absolute;left:0;right:0;top:0;padding:4px 7px;font-size:11px;color:var(--ink-soft);background:#050B15cc;border-bottom:1px solid var(--line)}
 .inset .phase{position:absolute;left:0;right:0;bottom:0;padding:5px 7px;font-size:12.5px;font-weight:700;color:var(--amber-ink);background:#050B15cc;border-top:1px solid var(--line)}
@@ -144,7 +146,7 @@ details.more[open] summary:before{content:"▾ "}
 <header class="top"><div class="brand"><h1>月の満ち欠けLAB<span class="en">MOON LAB</span></h1><p id="lead">月を動かして、地球からの見え方がどう変わるか確かめよう。</p></div></header>
 
 <div class="tabs"><button class="tab active" id="freeTab">✦ 自由実験</button><button class="tab" id="missionTab">◎ ミッション</button></div>
-<div class="seg stage-seg" role="group" aria-label="段階"><button id="st1" class="active">① 満ち欠け</button><button id="st2">② 時刻と方角</button><button id="st3">③ 季節と日付</button></div>
+<div class="seg stage-seg" role="group" aria-label="段階"><button id="st1" class="active">① 満ち欠け</button><button id="st2">② 時刻・方角</button><button id="st3">③ 季節・日付</button><button id="st4">④ 日食・月食</button></div>
 
 <section class="panel mission-panel hidden" id="missionPanel">
   <div class="mission-list" id="missionList"></div>
@@ -163,9 +165,10 @@ details.more[open] summary:before{content:"▾ "}
     <div class="label moon" id="lblMoon">月</div>
     <div class="label japan hidden" id="lblJapan">日本</div>
     <div class="label hidden" id="lblPole">北極</div>
+    <div class="label hidden" id="node1">交点</div><div class="label hidden" id="node2">交点</div>
     <div class="label hidden" id="seaSpring">春分</div><div class="label hidden" id="seaSummer">夏至</div><div class="label hidden" id="seaAutumn">秋分</div><div class="label hidden" id="seaWinter">冬至</div>
     <div class="label dir hidden" id="dirN">北</div><div class="label dir hidden" id="dirE">東</div><div class="label dir hidden" id="dirS">南</div><div class="label dir hidden" id="dirW">西</div>
-    <div class="inset" id="inset"><div class="outline" id="insetOutline"></div><div class="cap" id="insetCap">地球から見た月</div><div class="phase" id="insetPhase"></div></div>
+    <div class="inset" id="inset"><canvas class="ecl hidden" id="eclCanvas"></canvas><div class="outline" id="insetOutline"></div><div class="cap" id="insetCap">地球から見た月</div><div class="phase" id="insetPhase"></div></div>
     <div class="stage-helper" id="helper">☝ 月をつかんで回す ／ 背景ドラッグで視点を回す</div>
   </div>
   <div class="dock">
@@ -200,6 +203,8 @@ details.more[open] summary:before{content:"▾ "}
       <div class="seg grow" role="group" aria-label="再生の速さ（1秒あたり）"><button id="sp10m">10分</button><button id="sp1h">1時間</button><button id="sp1d">1日</button><button id="sp1w">1週間</button></div>
     </div>
     <p class="season-info hidden" id="seasonInfo"></p>
+    <div class="dock-row hidden" id="eclRow"><button class="ecl-btn" id="nextSolar">次の日食 ▶</button><button class="ecl-btn" id="nextLunar">次の月食 ▶</button></div>
+    <p class="season-info hidden" id="eclInfo"></p>
     <div class="seg hidden" role="group" aria-label="見る方角" id="lookSeg">
       <button id="lkF">月を追う</button><button id="lkE">東</button><button id="lkS">南</button><button id="lkW">西</button>
     </div>
@@ -218,6 +223,8 @@ details.more[open] summary:before{content:"▾ "}
   <p class="explain st2only hidden">② 日本（オレンジの印）は、地球の<strong>自転</strong>で1日に1回まわります（北極側から見て反時計回り）。水色の円盤は日本の<strong>地平線の面</strong>で、この面より<strong>上</strong>にある月だけが日本から見えます。日本が太陽のほうを向くと昼、反対を向くと真夜中です。だから、太陽と月の角度（月の形）によって、月が見える時刻と方角が決まります。</p>
   <p class="explain st3only hidden">③ 地球は、地軸を<strong>約23.4°傾けたまま</strong>（向きを変えずに）、1年かけて太陽のまわりを公転します。夏至のころは日本（北半球）が太陽のほうへ傾くので、太陽が高くのぼり、昼が長くなります。冬至のころはその逆です。満月は太陽の反対側にあるので、<strong>冬の満月は高く、夏の満月は低く</strong>のぼります。月は1日に約12°ずつ東へ動くので、同じ時刻に見ると毎日東へずれ、月の出は毎日約50分ずつ遅れます。</p>
   <p class="tiny st3only hidden">③の簡略化：太陽・地球・月の大きさと距離は実際の比率ではありません。月齢は、2000年1月6日の新月と平均の周期（29.53日）から計算した目安です（実際とは半日ほどずれることがあります）。月の通り道の傾き（約5°）は省いています（次の段階で扱います）。模型の月は実際よりずっと近いので、地上から見た空では、月と太陽を「地球の中心から見た方向」に描いています（実際の月は遠いので、地上から見てもほぼ同じ方向です）。月齢が目安なので、月の出・月の入りの時刻は実際と数十分ずれることがあります。「太陽の南中高度」「昼の長さ」は、北緯35°・日本時間での計算値です（大気による光の曲がりなどは入れていません）。</p>
+  <p class="explain st4only hidden">④ 太陽・月・地球が一直線に並ぶと食が起きます。<strong>日食</strong>は太陽・月・地球の順（新月のとき）で、月の影が地球のごく一部に落ちます。<strong>月食</strong>は太陽・地球・月の順（満月のとき）で、月が地球の影に入り、赤っぽく暗くなります。月の通り道（水色）は、地球の公転の面（オレンジ）に対して<strong>約5°傾いて</strong>いるので、ふだんの新月・満月では月が太陽と地球を結ぶ線の上か下にずれ、食になりません。2つの面が交わる線（<strong>交点</strong>の線）が太陽の方向を向く時期（1年に約2回）に新月・満月になったときだけ、食が起きます。</p>
+  <p class="tiny st4only hidden">④の簡略化：宇宙からの図では、月の通り道の傾きを見やすく<strong>3倍</strong>（約15°）にしています。食が起きるかどうか・欠け具合・日本から見えるかは、実際の角度と大きさ（月の距離の変化も入れた近似式）で計算しています。食の日付は実際とほぼ同じですが、時刻は数十分ずれることがあります。右上の「食の拡大図」は、太陽・月・地球の影の大きさの比を実際どおりに描いています。地上の空では、日食のときの太陽と月の重なり具合が実際と同じになるよう、太陽の近くでは月の位置を拡大して描いています。</p>
   <p class="tiny st2only hidden">②の簡略化：地軸の傾きを0°にしています（春分・秋分ごろの空。地軸の傾きと季節は次の段階で扱います）。時刻を動かすあいだ、月の位置は止めて考えます（実際の月は1日に約12°東へ動くので、月の出は毎日約50分ずつ遅れます）。模型の月は実際よりずっと近いので、地上から見た空では、月を「地球の中心から見た方向」に描いています（実際の月は遠いので、地上から見てもほぼ同じ方向です）。そのため、宇宙からの図で地平線の面のすぐ近くにある月は、地上の空での見える・見えないと少しちがうことがあります。日本は北緯35°としています。</p>
   <p class="explain">月は自分では光らず、<strong>いつも太陽側の半分</strong>が照らされています（オレンジの境目）。地球から見えるのは、月の<strong>地球に向いている半分</strong>（水色の境目）だけです。2つの半分が<strong>重なった部分</strong>が、地球から見える月の形になります。</p>
   <p class="tiny">モデルの簡略化：太陽・地球・月の大きさと距離は実際の比率ではありません（実際の月は地球から約38万km、太陽はその約400倍遠くにあります）。太陽の光は平行に届くとしています。月の通り道の傾き（約5°）と、地球の公転は省いています（①では地球の自転も止めています）。月は公転と同じ周期で自転しているため、いつも同じ面（暗い模様の多い表側）を地球に向けています。①の小窓は、日本（北半球）から南の空を見たときの向きです。②で地上から見ると新月が太陽に重なりますが、実際は月の通り道が約5°傾いているので、新月のたびに日食になるわけではありません。</p>
@@ -231,7 +238,7 @@ details.more[open] summary:before{content:"▾ "}
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-const VERSION = 'v0.3.0';
+const VERSION = 'v0.4.0';
 document.getElementById('ver').textContent = '月の満ち欠けLAB α' + VERSION.slice(1);
 
 const $ = id => document.getElementById(id);
@@ -332,6 +339,10 @@ moonOrbit.add(moon);
 // 指でつかみやすいよう、月より大きい透明な「つかみ判定」（レイヤー2：画面には映らない）
 const moonGrip = new THREE.Mesh(new THREE.SphereGeometry(MOON_R * 2.6, 12, 8), new THREE.MeshBasicMaterial());
 moonGrip.layers.set(2); moon.add(moonGrip);
+// ④ 地上の空で、月が太陽に重なった部分を黒く見せる影絵（太陽の上だけに描かれる）
+const moonMask = new THREE.Mesh(moon.geometry, new THREE.MeshBasicMaterial({ color: 0x06080c, transparent: true, depthTest: false, depthWrite: false,
+  stencilWrite: true, stencilRef: 1, stencilFunc: THREE.EqualStencilFunc, stencilFail: THREE.KeepStencilOp, stencilZFail: THREE.KeepStencilOp, stencilZPass: THREE.KeepStencilOp }));
+moonMask.renderOrder = 10; moonMask.layers.set(4); moonMask.visible = false; moon.add(moonMask);
 
 // 太陽（大きさ・距離は実際の比率ではない）
 const sun = new THREE.Mesh(new THREE.SphereGeometry(2.6, 32, 20), new THREE.MeshBasicMaterial({ color: 0xffd36e }));
@@ -348,6 +359,7 @@ let sunGlow;
   sunGlow.scale.set(16, 16, 1); sun.add(sunGlow);
 }
 sun.traverse(o => o.layers.set(3));
+Object.assign(sun.material, { stencilWrite: true, stencilRef: 1, stencilFunc: THREE.AlwaysStencilFunc, stencilZPass: THREE.ReplaceStencilOp });
 camera.layers.enable(3);
 
 /* ---------- 補助表示（レイヤー1） ---------- */
@@ -356,10 +368,11 @@ function onHelperLayer(obj) { obj.traverse(o => o.layers.set(1)); return obj; }
 const orbitLine = onHelperLayer(new THREE.LineLoop(
   new THREE.BufferGeometry().setFromPoints(Array.from({ length: 128 }, (_, i) => new THREE.Vector3(Math.cos(i / 128 * Math.PI * 2) * ORBIT_R, 0, Math.sin(i / 128 * Math.PI * 2) * ORBIT_R))),
   new THREE.LineBasicMaterial({ color: 0x3e5f84 })));
-moonOrbit.add(orbitLine);
+const moonPath = new THREE.Group(); moonOrbit.add(moonPath);   // ④で月の通り道の面を傾ける入れ物（①〜③は傾きなし）
+moonPath.add(orbitLine);
 for (let k = 0; k < 8; k++) {
   const a = k / 8 * Math.PI * 2, dot = onHelperLayer(new THREE.Mesh(new THREE.SphereGeometry(.09, 8, 6), new THREE.MeshBasicMaterial({ color: 0x5c7996 })));
-  dot.position.set(Math.cos(a) * ORBIT_R, 0, Math.sin(a) * ORBIT_R); moonOrbit.add(dot);
+  dot.position.set(Math.cos(a) * ORBIT_R, 0, Math.sin(a) * ORBIT_R); moonPath.add(dot);
 }
 // 太陽の光の矢印
 const rays = onHelperLayer(new THREE.Group());
@@ -390,6 +403,46 @@ const seasonDots = SEASONS.map(([, lon]) => {
   m.position.set(Math.cos(a) * SUN_D, 0, -Math.sin(a) * SUN_D); earthPath.add(m); return m;
 });
 onHelperLayer(earthPath); earthPath.visible = false;
+
+/* ---------- ④ 日食・月食の部品 ---------- */
+const LAT_EXAG = 3;   // 宇宙からの図では、月の通り道の傾きを3倍に誇張する
+const eclipHelpers = new THREE.Group(); scene.add(eclipHelpers);
+// 地球の公転の面（黄道面：オレンジ）
+const eclipticDisc = new THREE.Mesh(new THREE.CircleGeometry(11, 96), new THREE.MeshBasicMaterial({ color: 0xe0982c, transparent: true, opacity: .07, side: THREE.DoubleSide, depthWrite: false }));
+eclipticDisc.rotation.x = -Math.PI / 2; eclipHelpers.add(eclipticDisc);
+// 月の通り道の面（白道面：水色）と交点の線。moonPath の中なので一緒に傾く（交点の線＝moonPath の X 軸）
+const moonPlaneDisc = new THREE.Mesh(new THREE.CircleGeometry(ORBIT_R, 96), new THREE.MeshBasicMaterial({ color: 0x7fd8f0, transparent: true, opacity: .09, side: THREE.DoubleSide, depthWrite: false }));
+moonPlaneDisc.rotation.x = -Math.PI / 2;
+const nodeLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-ORBIT_R - 2, 0, 0), new THREE.Vector3(ORBIT_R + 2, 0, 0)]), new THREE.LineDashedMaterial({ color: 0xf4c27a, dashSize: .4, gapSize: .25 }));
+nodeLine.computeLineDistances();
+const moonPlaneParts = new THREE.Group(); moonPlaneParts.add(moonPlaneDisc, nodeLine); moonPath.add(moonPlaneParts);
+// 地球の影の向き（太陽と反対向きの点線）
+const shadowAxisGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+const shadowAxis = new THREE.Line(shadowAxisGeo, new THREE.LineDashedMaterial({ color: 0x93a9c2, dashSize: .3, gapSize: .25 }));
+eclipHelpers.add(shadowAxis);
+onHelperLayer(eclipHelpers); onHelperLayer(moonPlaneParts);
+eclipHelpers.visible = moonPlaneParts.visible = false;
+// 影：月食では地球の影の円すい、日食では月の影の円すいと、地球の表面に落ちた影（半影・本影）。食が起きているときだけ出す
+const coneMat = new THREE.MeshBasicMaterial({ color: 0x8a9bb0, transparent: true, opacity: .16, depthWrite: false, side: THREE.DoubleSide });
+const earthCone = new THREE.Mesh(new THREE.BufferGeometry(), coneMat), moonCone = new THREE.Mesh(new THREE.BufferGeometry(), coneMat);
+const spotPen = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: .45, depthWrite: false }));
+const spotUmb = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: .9, depthWrite: false }));
+scene.add(earthCone, moonCone, spotPen, spotUmb);
+for (const o of [earthCone, moonCone, spotPen, spotUmb]) { o.visible = false; o.layers.set(1); }   // 宇宙からの図だけに出す（地上の空には出さない）
+function setCone(mesh, from, to, r1, r2) {   // from（半径 r1）から to（半径 r2）への円すい
+  mesh.geometry.dispose();
+  mesh.geometry = new THREE.CylinderGeometry(r2, r1, from.distanceTo(to), 32, 1, true);
+  mesh.position.copy(from).add(to).multiplyScalar(.5);
+  mesh.quaternion.setFromUnitVectors(Y_AXIS, to.clone().sub(from).normalize());
+}
+function setCap(mesh, dir, angle) {   // 地球の表面の、dir を中心とする半径 angle（ラジアン）の丸い影
+  if (Math.abs((mesh.userData.angle || 0) - angle) > .004) {
+    mesh.geometry.dispose();
+    mesh.geometry = new THREE.SphereGeometry(EARTH_R * 1.006, 48, 10, 0, Math.PI * 2, 0, Math.min(Math.PI * .7, angle));
+    mesh.userData.angle = angle;
+  }
+  mesh.quaternion.setFromUnitVectors(Y_AXIS, dir);
+}
 
 /* ---------- ② 日本（北緯35°）：目印・地平線の面・地上の景色 ----------
    japan は地球（earth）の子なので、地球の自転といっしょに回る。japan の +Y が「真上」 */
@@ -443,18 +496,19 @@ sky.renderOrder = -1; sky.layers.set(4); japan.add(sky);
    ============================================================ */
 const state = { day: 0, playing: false, view: 'free', anim: null, dragging: false,
   stage: 1, time: 18, tPlaying: false, lookMode: 'follow', camAz: 180, camAlt: 25, moonAlt: 0, moonAz: 0, sunAlt: 0, sunAz: 0,
-  sunAng: Math.PI, n: 0, lon: 0, speed: '1h', dailyAdv: 0 };
+  sunAng: Math.PI, n: 0, lon: 0, speed: '1h', dailyAdv: 0, latV: 0, me: null, ecl: null, moonScale: 1, seasonHits: 0, inSeason: false };
 const Z_AXIS = new THREE.Vector3(0, 0, 1), Y_AXIS = new THREE.Vector3(0, 1, 0), X_AXIS = new THREE.Vector3(1, 0, 0);
-const tmpV = new THREE.Vector3(), moonWorld = new THREE.Vector3(), moonBase = new THREE.Vector3();
+const tmpV = new THREE.Vector3(), moonWorld = new THREE.Vector3(), moonBase = new THREE.Vector3(), skyDir = new THREE.Vector3();
 
 // 新月からの日数 → 月の位置。上から見て反時計回り（北極側から見た公転の向き）
 // 太陽の方向の角度 state.sunAng（①②は π＝画面の左）から、月齢の分だけ反時計回りに進んだ位置
 function moonAngle(day) { return state.sunAng + 2 * Math.PI * day / PERIOD; }
 function dayFromAngle(a) { let d = ((a - state.sunAng) / (2 * Math.PI)) * PERIOD; d = ((d % PERIOD) + PERIOD) % PERIOD; return Math.min(d, 29.5); }
 function placeMoon() {
-  const a = moonAngle(state.day);
-  moon.position.set(Math.cos(a) * ORBIT_R, 0, -Math.sin(a) * ORBIT_R);
+  const a = moonAngle(state.day), b = state.latV;   // b：月が公転の面から上下にずれる角度（④だけ。見やすく3倍）
+  moon.position.set(Math.cos(a) * Math.cos(b) * ORBIT_R, Math.sin(b) * ORBIT_R, -Math.sin(a) * Math.cos(b) * ORBIT_R);
   moonBase.copy(moon.position);
+  skyDir.copy(moonBase).normalize();   // 地上の空に描く月の向き（④では日本から見た実際の向きに置きかえる）
   // 月は公転1回のあいだに自転も1回する（同じ周期）ので、いつも同じ面（表側）が地球を向く
   moon.rotation.y = a + Math.PI;
   moon.getWorldPosition(moonWorld);
@@ -494,7 +548,7 @@ function observer(outPos, outUp) {
    ③では地軸を23.4°傾ける。地軸の向きは宇宙に対して固定（北極は +Z 側＝夏至の太陽の方向へ傾く） */
 const sunLocal = new THREE.Vector3(), axisW = new THREE.Vector3();
 function placeEarth() {
-  axisTilt.rotation.x = state.stage === 3 ? TILT : 0;
+  axisTilt.rotation.x = state.stage >= 3 ? TILT : 0;
   if (state.stage >= 2) {
     sunLocal.copy(SUN_DIR).applyAxisAngle(X_AXIS, -axisTilt.rotation.x);   // 傾いた地球から見た太陽の方角
     earth.rotation.y = Math.atan2(-sunLocal.z, sunLocal.x) + Math.PI * (state.time - 12) / 12;
@@ -523,8 +577,9 @@ function skyOf(world) {
 function updateSky() {
   if (state.stage < 2) return;
   obsFrame();
-  const m = skyOf(moonWorld); state.moonAlt = m.alt; state.moonAz = m.az;
   const su = skyOf(sun.position); state.sunAlt = su.alt; state.sunAz = su.az;
+  if (state.stage === 4) computeEclipse();
+  const m = skyOf(state.stage === 4 ? state.ecl.topo : moonWorld); state.moonAlt = m.alt; state.moonAz = m.az;
 }
 const DIR16 = ['北', '北北東', '北東', '東北東', '東', '東南東', '南東', '南南東', '南', '南南西', '南西', '西南西', '西', '西北西', '北西', '北北西'];
 const dirName = az => DIR16[Math.round(((az % 360) + 360) % 360 / 22.5) % 16];
@@ -542,6 +597,7 @@ function timeWord(t) {
 }
 function moonSkyText() {
   if (state.moonAlt <= 0) return '月は地平線の下（見えない）';
+  if (state.stage === 4 && state.ecl && state.ecl.obsJ > 0) return `月が太陽の前を通っている（日食・${dirName(state.moonAz)}の空）`;
   if (phaseName(state.day) === '新月') return `月は${dirName(state.moonAz)}の空（新月なので見えない）`;
   return `月は${dirName(state.moonAz)}の空・高さ${Math.round(state.moonAlt)}°`;
 }
@@ -555,6 +611,58 @@ function sunLongitude(jd) {   // 地球から見た太陽の方向（春分＝0�
   return ((280.460 + .9856474 * d + 1.915 * Math.sin(g) + .020 * Math.sin(2 * g)) % 360 + 360) % 360;
 }
 const moonAgeOf = jd => (((jd - NEWMOON_JD) % SYNODIC) + SYNODIC) % SYNODIC;
+// 月の位置：Meeus『天文アルゴリズム』の主な項だけを使った近似式（黄経・黄緯は0.1〜0.3°ほどの精度）
+function moonEphem(jd) {
+  const d = jd - 2451545, r = x => RAD(((x % 360) + 360) % 360), sn = Math.sin, cs = Math.cos;
+  const Lp = 218.3164477 + 13.17639648 * d, D = r(297.8501921 + 12.19074912 * d), M = r(357.5291092 + .98560028 * d),
+    Mp = r(134.9633964 + 13.06499295 * d), F = r(93.2720950 + 13.22935024 * d);
+  const lon = Lp + 6.289 * sn(Mp) + 1.274 * sn(2 * D - Mp) + .658 * sn(2 * D) + .214 * sn(2 * Mp) - .186 * sn(M) - .114 * sn(2 * F)
+    + .059 * sn(2 * D - 2 * Mp) + .057 * sn(2 * D - M - Mp) + .053 * sn(2 * D + Mp) + .046 * sn(2 * D - M) + .041 * sn(Mp - M) - .035 * sn(D) - .031 * sn(M + Mp);
+  const lat = 5.128 * sn(F) + .281 * sn(Mp + F) + .278 * sn(Mp - F) + .173 * sn(2 * D - F) + .055 * sn(2 * D - Mp + F) + .046 * sn(2 * D - Mp - F) + .033 * sn(2 * D + F) + .017 * sn(2 * Mp + F);
+  const km = 385001 - 20905 * cs(Mp) - 3699 * cs(2 * D - Mp) - 2956 * cs(2 * D) - 570 * cs(2 * Mp) + 246 * cs(2 * Mp - 2 * D) - 205 * cs(M - 2 * D) - 171 * cs(Mp + 2 * D) - 152 * cs(Mp + M - 2 * D);
+  const node = ((Lp - DEG(F)) % 360 + 360) % 360;   // 交点（月が南から北へ面を横切る点）の方向。約18.6年で1周、逆向きに動く
+  return { lon: ((lon % 360) + 360) % 360, lat, dist: km / 6378.14, node };   // dist は地球の半径を1とした距離
+}
+const sunDistAU = jd => { const M = RAD(357.5291092 + .98560028 * (jd - 2451545)); return 1.00014 - .01671 * Math.cos(M) - .00014 * Math.cos(2 * M); };
+// 黄経・黄緯 → 模型の向き（春分の太陽が −X、上から見て反時計回り、+Y が公転の面の北）
+const eclDir = (lon, lat, out = new THREE.Vector3()) => { const l = RAD(lon), b = RAD(lat); return out.set(-Math.cos(b) * Math.cos(l), Math.sin(b), Math.cos(b) * Math.sin(l)); };
+const elongOf = (jd, me = moonEphem(jd)) => ((me.lon - sunLongitude(jd)) % 360 + 360) % 360;
+
+/* ---------- ④ いま食が起きているか（実際の角度と大きさで計算） ---------- */
+const SUN_VIS = DEG(Math.atan(2.6 / SUN_D)), MOON_VIS = DEG(Math.atan(MOON_R / ORBIT_R));   // 模型の太陽・月の見かけの半径（°）
+function computeEclipse() {
+  const me = state.me, jd = state.jd;
+  const s = eclDir(state.lon, 0), m = eclDir(me.lon, me.lat);
+  const piM = DEG(Math.asin(1 / me.dist)), sR = .2666 / sunDistAU(jd), piS = .00244, mR = .2725 * piM;
+  // 月食：地球の影（本影・半影）の中心は太陽と反対の方向。影の半径は大気の分2%大きくする
+  const sepL = DEG(m.angleTo(s.clone().negate())), umb = 1.02 * (piM - sR + piS), pen = 1.02 * (piM + sR + piS);
+  let lunar = null;
+  if (sepL < pen + mR) lunar = { kind: sepL < umb - mR ? '皆既月食' : sepL < umb + mR ? '部分月食' : '半影月食', mag: (umb + mR - sepL) / (2 * mR) };
+  // 日食：太陽から月をとおる影の軸が、地球（半径1）のどこに当たるか
+  const Mv = m.clone().multiplyScalar(me.dist), t0 = Mv.dot(s), closest = Mv.clone().addScaledVector(s, -t0), gamma = closest.length();
+  const tanS = Math.tan(RAD(sR)), penR = .2725 + t0 * tanS, umbR = .2725 - t0 * tanS;
+  let solar = null;
+  if (t0 > 0 && gamma < 1 + penR) {
+    const spot = gamma < 1 ? closest.clone().addScaledVector(s, Math.sqrt(1 - gamma * gamma)) : closest.clone();
+    solar = { kind: gamma < 1 ? (umbR > 0 ? '皆既日食' : '金環日食') : '部分日食', spot: spot.normalize(), penR, umbR };
+  }
+  // 日本から見た月の向き（地球の丸さによる実際のずれを入れる）と、日本での日食の欠け具合
+  const topo = Mv.clone().sub(obsU), topoDist = topo.length(); topo.normalize();
+  const sepJ = DEG(topo.angleTo(s)), mRJ = DEG(Math.asin(.2725 / topoDist));
+  const obsJ = state.sunAlt > -1 && sepJ < sR + mRJ ? Math.min(1, (sR + mRJ - sepJ) / (2 * sR)) : 0;
+  const nodeGap = Math.abs(((state.lon - me.node) % 180 + 180) % 180 - 90);   // 交点の線と太陽の方向のずれ（90で一致）
+  state.ecl = { lunar, solar, s, m, topo, sepJ, sepL, mR, mRJ, sR, umb, pen, obsJ, season: nodeGap > 90 - 16 };
+  // 地上の空に描く月の向き：太陽の近くでは、重なり具合が実際と同じになるよう太陽からのずれを拡大する（模型の太陽は実際の約16倍の見かけ）
+  const K = SUN_VIS / sR;
+  let disp = sepJ;
+  if (sepJ < 1) disp = sepJ * K; else if (sepJ < 20) disp = K + (sepJ - 1) * (20 - K) / 19;
+  if (sepJ < 20 && sepJ > 1e-6) { const ax = new THREE.Vector3().crossVectors(s, topo).normalize(); skyDir.copy(s).applyAxisAngle(ax, RAD(disp)); }
+  else skyDir.copy(topo);
+  state.moonScale = (mRJ / sR) / (MOON_VIS / SUN_VIS);
+  // 月食で赤っぽく暗くなる（本影に入った割合で色を変える。半影だけなら少し暗く）
+  const f = lunar ? (lunar.kind === '半影月食' ? .18 : .35 + .65 * Math.min(1, lunar.mag)) : 0;
+  moonMat.color.setRGB(1 - f * .45, 1 - f * .82, 1 - f * .9);
+}
 const ymdOf = n => { const d = new Date(Math.floor(n + 1e-6) * DAY_MS); return [d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate()]; };
 const dayNumOf = (y, m, d) => Date.UTC(y, m - 1, d) / DAY_MS;
 function setToday(hour) {
@@ -568,13 +676,37 @@ function setSunAngle(a) {
   sunLight.position.copy(SUN_DIR).multiplyScalar(50);
   rays.rotation.y = a - Math.PI;
   earthPath.position.copy(sun.position);
+  shadowAxisGeo.attributes.position.setXYZ(1, -SUN_DIR.x * (ORBIT_R + 3), 0, -SUN_DIR.z * (ORBIT_R + 3)); shadowAxisGeo.attributes.position.needsUpdate = true;
+  shadowAxis.computeLineDistances();
 }
-function applyDate() {
-  const jd = jdOf(state.n, state.time);
+function applyDate(quiet) {
+  const jd = state.jd = jdOf(state.n, state.time);
   state.lon = sunLongitude(jd);
   setSunAngle(RAD(state.lon) + Math.PI);   // 春分の日に、太陽が画面の左（−X）にくる向き
-  state.day = Math.min(29.5, moonAgeOf(jd));
-  placeMoon(); placeEarth(); updateSky(); updateUI();
+  const me = state.me = moonEphem(jd);
+  state.day = Math.min(29.5, elongOf(jd, me) / 360 * SYNODIC);   // 月齢の目安（太陽と月の角度から）
+  state.latV = state.stage === 4 ? RAD(me.lat * LAT_EXAG) : 0;
+  moonPath.rotation.set(state.stage === 4 ? RAD(5.145 * LAT_EXAG) : 0, state.stage === 4 ? RAD(me.node) + Math.PI : 0, 0, 'YXZ');
+  placeMoon(); placeEarth(); updateSky();
+  if (state.stage === 4) {
+    if (state.ecl.season && !state.inSeason && state.tPlaying) state.seasonHits++;
+    state.inSeason = state.ecl.season;
+    updateShadows();
+  }
+  if (!quiet) updateUI();
+}
+// ④ 影の円すいと、地球に落ちた月の影（食が起きているときだけ）
+function updateShadows() {
+  const e = state.ecl, on4 = state.stage === 4;
+  earthCone.visible = on4 && !!e.lunar;
+  if (earthCone.visible) setCone(earthCone, new THREE.Vector3(), SUN_DIR.clone().multiplyScalar(-(ORBIT_R + 2.5)), EARTH_R * .98, 1.15);
+  const sol = on4 && !!e.solar;
+  moonCone.visible = spotPen.visible = spotUmb.visible = sol;
+  if (sol) {
+    setCap(spotPen, e.solar.spot, Math.min(1.2, e.solar.penR));
+    setCap(spotUmb, e.solar.spot, Math.max(.06, Math.abs(e.solar.umbR)));
+    setCone(moonCone, moonWorld, e.solar.spot.clone().multiplyScalar(EARTH_R), MOON_R, Math.min(1.2, e.solar.penR) * EARTH_R);
+  }
 }
 function seasonWord(lon) {
   const near = c => Math.abs(((lon - c + 540) % 360) - 180) < 8;
@@ -593,7 +725,8 @@ const C = h => new THREE.Color(h);
 const SKY = { zenDay: C(0x2e6cb5), zenNight: C(0x081428), horDay: C(0x9cc6ea), horNight: C(0x1d3556), horTw: C(0xe8955a), grDay: C(0x3e5e3c), grNight: C(0x17261d), grTw: C(0x2a3324) };
 const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 function updateSkyColors() {
-  const s = state.sunAlt, dayK = smooth(-10, 6, s), twK = Math.max(0, 1 - Math.abs(s + 1) / 9);
+  const s = state.sunAlt, twK = Math.max(0, 1 - Math.abs(s + 1) / 9);
+  const dayK = smooth(-10, 6, s) * (state.stage === 4 && state.ecl ? 1 - .85 * Math.pow(state.ecl.obsJ, 1.5) : 1);   // 日食で欠けるほど暗くなる
   skyUni.uZen.value.copy(SKY.zenNight).lerp(SKY.zenDay, dayK);
   skyUni.uHor.value.copy(SKY.horNight).lerp(SKY.horDay, dayK).lerp(SKY.horTw, twK * .85);
   skyUni.uZenA.value = Math.min(1, dayK + twK * .35);
@@ -625,6 +758,10 @@ function fitDistance() {
 function presetPose(view) {
   const d = fitDistance();
   if (view === 'top') return { pos: new THREE.Vector3(0, d, d * 0.004), up: new THREE.Vector3(0, 1, 0), fov: 45 };
+  if (view === 'side' && state.stage === 4) {   // ④：太陽と地球を結ぶ線を真横から見る（月が線の上か下かが分かる）
+    const a = state.sunAng - Math.PI / 2;
+    return { pos: new THREE.Vector3(Math.cos(a) * d, d * 0.05, -Math.sin(a) * d), up: new THREE.Vector3(0, 1, 0), fov: 45 };
+  }
   if (view === 'side') return { pos: new THREE.Vector3(0, d * 0.12, d), up: new THREE.Vector3(0, 1, 0), fov: 45 };
   return { pos: new THREE.Vector3(d * 0.2, d * 0.62, d * 0.78), up: new THREE.Vector3(0, 1, 0), fov: 45 };
 }
@@ -712,7 +849,7 @@ const raycaster = new THREE.Raycaster(); raycaster.layers.set(2);
 const ndc = new THREE.Vector2(), plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), hit = new THREE.Vector3();
 function setNdc(e) { const r = renderer.domElement.getBoundingClientRect(); ndc.set((e.clientX - r.left) / r.width * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1); }
 renderer.domElement.addEventListener('pointerdown', e => {   // capture: OrbitControls より先に判定する
-  if (state.view === 'earth' || state.anim || state.stage === 3) return;   // ③では月の位置は日付で決まる
+  if (state.view === 'earth' || state.anim || state.stage >= 3) return;   // ③④では月の位置は日付で決まる
   setNdc(e); raycaster.setFromCamera(ndc, camera);
   if (raycaster.intersectObject(moonGrip, false).length) {
     state.dragging = true; controls.enabled = false; stopPlay();
@@ -722,7 +859,7 @@ renderer.domElement.addEventListener('pointerdown', e => {   // capture: OrbitCo
 }, { capture: true });
 renderer.domElement.addEventListener('pointermove', e => {
   if (!state.dragging) {
-    if (state.view !== 'earth' && !state.anim && state.stage !== 3 && e.pointerType === 'mouse') {
+    if (state.view !== 'earth' && !state.anim && state.stage < 3 && e.pointerType === 'mouse') {
       setNdc(e); raycaster.setFromCamera(ndc, camera);
       renderer.domElement.style.cursor = raycaster.intersectObject(moonGrip, false).length ? 'grab' : '';
     }
@@ -766,30 +903,34 @@ function setDay(d) {
 }
 function setTime(t) {
   state.time = ((t % 24) + 24) % 24;
-  if (state.stage === 3) { applyDate(); return; }
+  if (state.stage >= 3) { applyDate(); return; }
   placeEarth(); updateSky(); updateUI();
 }
 function updateUI() {
-  const st = state.stage, sky = st >= 2, st3 = st === 3;
+  const st = state.stage, sky = st >= 2, st3 = st >= 3, st4 = st === 4;
   $('day').value = String(state.day);
   $('dayValue').textContent = state.day.toFixed(1) + ' 日';
   $('time').value = String(state.time);
   $('timeValue').innerHTML = `${timeStr(state.time)}<small>${timeWord(state.time)}</small>`;
   const name = phaseName(state.day);
   const earthView = state.view === 'earth';
-  for (const [id, v] of [['st1', 1], ['st2', 2], ['st3', 3]]) $(id).classList.toggle('active', st === v);
+  for (const [id, v] of [['st1', 1], ['st2', 2], ['st3', 3], ['st4', 4]]) $(id).classList.toggle('active', st === v);
   $('dayRow').classList.toggle('hidden', st3);
   $('timeRow').classList.toggle('hidden', !sky);
-  for (const id of ['dateRow', 'yearRow', 'speedRow', 'seasonInfo']) $(id).classList.toggle('hidden', !st3);
+  for (const id of ['dateRow', 'yearRow', 'speedRow']) $(id).classList.toggle('hidden', !st3);
+  $('seasonInfo').classList.toggle('hidden', st !== 3);
+  for (const id of ['eclRow', 'eclInfo']) $(id).classList.toggle('hidden', !st4);
   $('lookSeg').classList.toggle('hidden', !(sky && earthView));
   for (const [id, v] of [['lkF', 'follow'], ['lkE', 'E'], ['lkS', 'S'], ['lkW', 'W']]) $(id).classList.toggle('active', state.lookMode === v);
   for (const [id, v] of [['sp10m', '10m'], ['sp1h', '1h'], ['sp1d', '1d'], ['sp1w', '1w']]) $(id).classList.toggle('active', state.speed === v);
   for (const el of document.querySelectorAll('.st2only')) el.classList.toggle('hidden', st !== 2);
-  for (const el of document.querySelectorAll('.st3only')) el.classList.toggle('hidden', !st3);
+  for (const el of document.querySelectorAll('.st3only')) el.classList.toggle('hidden', st !== 3);
+  for (const el of document.querySelectorAll('.st4only')) el.classList.toggle('hidden', !st4);
   for (const el of document.querySelectorAll('.skyonly')) el.classList.toggle('hidden', !sky);
-  $('lead').textContent = st3 ? '日付を選んで再生しよう。季節や日によって、月や太陽の見え方がどう変わるか確かめよう。'
+  $('lead').textContent = st4 ? '日付を進めて、日食・月食が起きるときと起きないときを比べよう。' : st3 ? '日付を選んで再生しよう。季節や日によって、月や太陽の見え方がどう変わるか確かめよう。'
     : sky ? '時刻を動かして、日本から月がいつ・どの方角に見えるか確かめよう。' : '月を動かして、地球からの見え方がどう変わるか確かめよう。';
   $('vSide').textContent = st3 ? '公転' : '横から';
+  $('vTop').textContent = st4 ? '横から' : '上から';
   let when = `日本 ${timeStr(state.time)}（${timeWord(state.time)}）`;
   if (st3) {
     const [y, m, d] = ymdOf(state.n), iso = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
@@ -803,7 +944,19 @@ function updateUI() {
     $('seasonInfo').textContent = `${seasonWord(state.lon)}｜太陽の南中高度 約${Math.round(si.noonAlt)}°｜昼の長さ 約${Math.floor(mins / 60)}時間${mins % 60}分（北緯35°）`;
     when = `${m}/${d} ${timeStr(state.time)}（${timeWord(state.time)}）`;
   }
-  if (sky) {
+  $('eclCanvas').classList.toggle('hidden', !st4);
+  if (st4 && state.ecl) {
+    const e = state.ecl, lunarSide = state.day > 7.4 && state.day < 22.1;
+    $('insetCap').textContent = lunarSide ? '食の拡大図：地球の影と月' : '食の拡大図：日本から見た太陽と月';
+    $('insetPhase').textContent = lunarSide ? (e.lunar ? e.lunar.kind : `影から ${Math.max(0, e.sepL - e.pen - e.mR).toFixed(1)}° はなれている`)
+      : (e.obsJ > 0 ? `日本で欠けて見える ${Math.round(e.obsJ * 100)}%` : e.solar ? '日本では見えない' : `太陽から ${Math.max(0, e.sepJ).toFixed(1)}°`);
+    $('insetPhase').classList.remove('hidden'); $('insetOutline').classList.add('hidden');
+    const sees = e.lunar ? (state.moonAlt > 0 ? `日本から：見える（月の高さ${Math.round(state.moonAlt)}°）` : '日本から：見えない（月が地平線の下）')
+      : e.solar ? (e.obsJ > 0 ? `日本から：欠けて見える（欠け具合 約${Math.round(e.obsJ * 100)}%）` : '日本から：見えない（地球の黒い丸のところで見える）') : '';
+    const lat = state.me.lat;
+    $('eclInfo').textContent = (e.lunar || e.solar) ? `${(e.lunar || e.solar).kind}が起きている｜${sees}`
+      : `食は起きていない｜月は地球の公転の面から ${Math.abs(lat).toFixed(1)}° ${lat >= 0 ? '北（上）' : '南（下）'}${e.season ? '｜いまは「食の季節」（交点の線が太陽の方向）' : ''}`;
+  } else if (sky) {
     $('insetCap').textContent = earthView ? '宇宙の上から見た位置' : '日本から見た空';
     $('insetPhase').textContent = state.moonAlt > 0 ? `${dirName(state.moonAz)}の空・高さ${Math.round(state.moonAlt)}°` : '月は地平線の下';
     $('insetPhase').classList.toggle('hidden', earthView);
@@ -814,7 +967,7 @@ function updateUI() {
     $('insetCap').textContent = earthView ? '宇宙の上から見た位置' : '地球から見た月';
     $('insetOutline').classList.toggle('hidden', earthView);
   }
-  for (const [id, v] of [['vTop', 'top'], ['vSide', st3 ? 'orbit' : 'side'], ['vFree', 'free'], ['vEarth', 'earth']]) $(id).classList.toggle('active', state.view === v);
+  for (const [id, v] of [['vTop', st4 ? 'side' : 'top'], ['vSide', st3 ? 'orbit' : 'side'], ['vFree', 'free'], ['vEarth', 'earth']]) $(id).classList.toggle('active', state.view === v);
   let help;
   if (sky) {
     const ph = st3 ? `月齢${state.day.toFixed(1)} ${name}` : name;
@@ -831,8 +984,9 @@ function updateUI() {
   litRing.visible = $('optLit').checked;
   faceRing.visible = $('optFace').checked;
   sight.visible = $('optSight').checked;
-  horizonDisc.visible = $('optHorizon').checked;
+  horizonDisc.visible = $('optHorizon').checked && !st4;   // ④では食の図を見やすくするため出さない
   axisLine.visible = earthPath.visible = st3;
+  eclipHelpers.visible = moonPlaneParts.visible = st4;
 }
 function stopPlay() { state.playing = false; updateUI(); }
 
@@ -841,18 +995,23 @@ function setStage(n) {
   state.stage = n; state.playing = false; state.tPlaying = false;
   japan.visible = n >= 2;
   if (state.mission && MISSIONS.find(m => m.id === state.mission).stage !== n) exitMission();
-  if (n === 3) {
-    if (!state.n) setToday(20);   // はじめて③を開いたときは「今日の20時」
+  moonMat.color.set(0xffffff);
+  if (n >= 3) {
+    if (!state.n) setToday(20);   // はじめて③④を開いたときは「今日の20時」
     applyDate();
   } else {
+    state.latV = 0; moonPath.rotation.set(0, 0, 0);
     setSunAngle(Math.PI);   // ①②：地軸の傾き0°、太陽は画面の左
     placeMoon(); placeEarth(); updateSky();
   }
+  if (n !== 4) { state.ecl = null; earthCone.visible = moonCone.visible = spotPen.visible = spotUmb.visible = false; }
   if (n === 1) { camera.layers.enable(1); camera.layers.enable(3); camera.layers.disable(4); }
-  if (state.view === 'earth' || state.view === 'orbit' || state.anim) goView('free');
+  if (n === 4 && state.view !== 'earth') goView('side');
+  else if (state.view === 'earth' || (state.view === 'orbit' && n < 3) || state.anim) goView('free');
   updateUI(); renderMissionList();
   const tip = n === 2 && !seen.has('st2') ? ['st2', '時刻を動かしてみよう。日本（オレンジの印）と、水色の「地平線の面」はどう回る？ 面より上にある月だけが見えるよ。']
     : n === 3 && !seen.has('st3') ? ['st3', '日付は今日になっています。時刻の ▷ を押して再生してみよう。「地球から」で地上に降りると、月が昇って沈む様子が見られるよ。']
+    : n === 4 && !seen.has('st4') ? ['st4', '「横から」見ると、月の通り道（水色）が地球の公転の面（オレンジ）から傾いているね（見やすく3倍）。「次の月食」を押してみよう。']
     : null;
   if (tip && !state.mission) {
     seen.add(tip[0]);
@@ -869,6 +1028,9 @@ $('tPlayBtn').addEventListener('click', () => { state.tPlaying = !state.tPlaying
 $('st1').addEventListener('click', () => setStage(1));
 $('st2').addEventListener('click', () => setStage(2));
 $('st3').addEventListener('click', () => setStage(3));
+$('st4').addEventListener('click', () => setStage(4));
+$('nextSolar').addEventListener('click', () => gotoNextEclipse('solar'));
+$('nextLunar').addEventListener('click', () => gotoNextEclipse('lunar'));
 $('date').addEventListener('change', e => {
   const v = e.target.value; if (!v) return;
   const [y, m, d] = v.split('-').map(Number); state.n = dayNumOf(y, m, d); applyDate(); afterChange();
@@ -880,13 +1042,55 @@ for (const [id, v] of [['sp10m', '10m'], ['sp1h', '1h'], ['sp1d', '1d'], ['sp1w'
   if (v === '10m' || v === '1h') { state.n = Math.round(state.n); applyDate(); }   // 日付の途中の端数をそろえる
   updateUI();
 });
-$('vTop').addEventListener('click', () => goView('top'));
-$('vSide').addEventListener('click', () => goView(state.stage === 3 ? 'orbit' : 'side'));
+$('vTop').addEventListener('click', () => goView(state.stage === 4 ? 'side' : 'top'));
+$('vSide').addEventListener('click', () => goView(state.stage >= 3 ? 'orbit' : 'side'));
 $('vFree').addEventListener('click', () => goView('free'));
 $('vEarth').addEventListener('click', () => goView('earth'));
 for (const [id, v] of [['lkF', 'follow'], ['lkE', 'E'], ['lkS', 'S'], ['lkW', 'W']]) $(id).addEventListener('click', () => { state.lookMode = v; updateUI(); afterChange(); });
 for (const id of ['optRays', 'optLit', 'optFace', 'optSight', 'optHorizon']) $(id).addEventListener('change', () => { updateUI(); afterChange(); });
 $('suggestionClose').addEventListener('click', () => $('suggestion').classList.add('hidden', 'dismissed'));
+
+/* ---------- ④ 次の日食・月食をさがす（最大約3年先まで） ---------- */
+function findNextEclipse(type, fromJd) {
+  const target = type === 'solar' ? 0 : 180;
+  const diff = jd => ((elongOf(jd) - target + 540) % 360) - 180;   // 新月（満月）の時刻の前は負、後は正
+  let jd = fromJd;
+  for (let k = 0; k < 40; k++) {
+    let a = jd, da = diff(a), b = a + 1, db = diff(b);
+    while (!(da < 0 && db >= 0)) { a = b; da = db; b = a + 1; db = diff(b); }
+    for (let i = 0; i < 30; i++) { const mid = (a + b) / 2; if (diff(mid) < 0) a = mid; else b = mid; }
+    const js = (a + b) / 2;
+    // 食がいちばん深くなる時刻：太陽（または地球の影）と月の中心がいちばん近づく時刻
+    const sepAt = t => { const me = moonEphem(t), sv = eclDir(sunLongitude(t), 0); if (type === 'lunar') sv.negate(); return { sep: DEG(eclDir(me.lon, me.lat).angleTo(sv)), me, t }; };
+    let best = sepAt(js);
+    for (let t = js - .3; t <= js + .3; t += 1 / 288) { const r = sepAt(t); if (r.sep < best.sep) best = r; }
+    const piM = DEG(Math.asin(1 / best.me.dist)), mR = .2725 * piM, sR = .2666 / sunDistAU(best.t);
+    const lim = type === 'lunar' ? 1.02 * (piM + sR + .00244) + mR : piM - .00244 + sR + mR;
+    if (best.sep < lim) return best.t;
+    jd = js + 25;
+  }
+  return null;
+}
+function gotoNextEclipse(type) {
+  const jd = findNextEclipse(type, jdOf(state.n, state.time) + .5);
+  if (jd == null) { toast('3年以内に見つかりませんでした'); return; }
+  const setJd = j => { const ms = (j - 2440587.5) * DAY_MS + JST_MS; state.n = Math.floor(ms / DAY_MS); state.time = Math.round((ms - state.n * DAY_MS) / 3600e3 * 12) / 12; };
+  state.tPlaying = false;
+  setJd(jd); applyDate(true);
+  const kind = type === 'solar' ? state.ecl.solar && state.ecl.solar.kind : state.ecl.lunar && state.ecl.lunar.kind;
+  let where;
+  if (type === 'solar') {
+    // 日食は場所によって見える時刻がちがうので、前後3.5時間で日本からいちばん欠けて見える時刻をさがす
+    let best = { o: 0, j: jd };
+    for (let j = jd - 3.5 / 24; j <= jd + 3.5 / 24; j += 5 / 1440) { setJd(j); applyDate(true); if (state.ecl.obsJ > best.o) best = { o: state.ecl.obsJ, j }; }
+    setJd(best.j);
+    where = best.o > 0 ? `日本でいちばん欠ける時刻（約${Math.round(best.o * 100)}%）` : '日本では見えない';
+  }
+  applyDate(); afterChange();
+  if (type === 'lunar') where = state.moonAlt > 0 ? '日本から見える' : '日本では月が地平線の下';
+  const [y, m, d] = ymdOf(state.n);
+  toast(`${y}年${m}月${d}日 ${timeStr(state.time)}ごろ：${kind || (type === 'solar' ? '日食' : '月食')}（${where}）`);
+}
 
 function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.remove('hidden'); clearTimeout(toast.timer); toast.timer = setTimeout(() => t.classList.add('hidden'), 2600); }
 
@@ -896,7 +1100,9 @@ function suggest() {
   if (state.mission || $('suggestion').classList.contains('dismissed')) return;
   const d = state.day;
   let msg = null;
-  if (state.stage === 3) {
+  if (state.stage === 4) {
+    if (!seen.has('sideFull') && state.view === 'side' && !state.anim && state.day > 13.8 && state.day < 15.8 && state.ecl && !state.ecl.lunar) msg = ['sideFull', 'この満月は、地球の影の向き（点線）の上か下を通っているね。だから月食にならない。'];
+  } else if (state.stage === 3) {
     if (!seen.has('daily') && state.view === 'earth' && !state.anim && state.speed !== '1d') msg = ['daily', '速さを「1日」にして再生すると、毎日同じ時刻の月を見比べられるよ。月は毎日どちらへずれていく？'];
     else if (!seen.has('orbit3') && state.dailyAdv > 2) msg = ['orbit3', '「公転」の視点で、太陽のまわりを回る地球と地軸の傾きを見てみよう。1年スライダーで夏至と冬至を比べると？'];
   } else if (state.stage === 2) {
@@ -959,7 +1165,25 @@ const MISSIONS = [
     choices: ['春分', '夏至', '秋分', '冬至'], answer: '夏至',
     hint: '「公転」の視点にして、地軸の北極側が太陽のほうへ傾いているのはいつか見てみよう。',
     ok: () => state.lon >= 87 && state.lon <= 93,
-    summary: '夏至のころは北半球が太陽のほうへ傾いているので、太陽が高くのぼり、昼が一番長くなります（北緯35°で約14時間20分）。冬至は約9時間40分です。' }
+    summary: '夏至のころは北半球が太陽のほうへ傾いているので、太陽が高くのぼり、昼が一番長くなります（北緯35°で約14時間20分）。冬至は約9時間40分です。' },
+  { id: 'M12', stage: 4, title: '日食はどんな月のとき？', desc: '日食が起きるとき、月はどんな形（月齢）になっている？ 予想してから、「次の日食」を押して確かめよう。',
+    choices: ['新月', '上弦の月', '満月'], answer: '新月',
+    hint: '日食は、太陽・月・地球の順に一直線に並ぶとき。そのとき月の光っている側はどちらを向いている？', ok: () => !!(state.ecl && state.ecl.solar),
+    summary: '日食は新月のときに起きます。太陽・月・地球の順に一直線に並び、月の影が地球のごく一部に落ちます。影の中にいる人には、太陽が月にかくされて見えます。' },
+  { id: 'M13', stage: 4, title: '満月なのに月食にならないのは？', desc: '満月は毎月来るのに、月食は毎月は起きない。なぜだろう？ 予想してから、月食にならない満月を「横から」見て確かめよう。',
+    choices: ['月が影の上や下を通るから', '満月の日は月が遠いから', '太陽の光が弱いから'], answer: '月が影の上や下を通るから',
+    hint: '1年スライダーや日付で、月齢が15くらいの日にしよう。「横から」で、月が地球の影の向き（点線）のどこにあるか見てみよう。',
+    ok: () => state.day > 13.8 && state.day < 15.8 && state.ecl && !state.ecl.lunar && state.view === 'side' && !state.anim,
+    summary: '月の通り道は、地球の公転の面に対して約5°傾いています。ふつうの満月では、月は地球の影の少し上か下を通りすぎるので、月食になりません。' },
+  { id: 'M14', stage: 4, title: '日本で見える月食をさがそう', desc: '「次の月食」を何回か押して、日本から見える月食をさがそう。見つけたら「地球から」で地上に降りて、赤っぽい月を見てみよう。',
+    hint: '下の黄色い文字が「日本から：見える」になっている月食をさがそう。夜に起きる月食なら、日本から見えるよ。',
+    ok: () => !!(state.ecl && state.ecl.lunar && state.ecl.lunar.kind !== '半影月食' && state.moonAlt > 0 && inGround()),
+    summary: '月食は、地球の夜側のどこからでも同じように見えます。月食のとき月が赤っぽく見えるのは、地球の大気を通って曲がった赤い光が、影の中の月をうっすら照らすからです。' },
+  { id: 'M15', stage: 4, title: '食が起きやすい時期は1年に何回？', desc: '交点の線が太陽の方向を向くと、食が起きやすくなります（食の季節）。それは1年に何回ある？ 予想してから、再生して確かめよう。',
+    choices: ['1回', '2回', '4回'], answer: '2回',
+    hint: '「公転」の視点にして、速さを「1週間」で再生しよう。下の黄色い文字に「食の季節」と出るのは何回？',
+    ok: () => state.seasonHits >= 2,
+    summary: '交点の線は、地球が太陽のまわりを半周するごとに太陽の方向を向くので、食の季節は1年に約2回（約半年ごと）あります。交点の線は少しずつ動くので、食の季節は毎年少しずつ早まります。' }
 ];
 state.mission = null; state.pick = null;
 const done = new Set();
@@ -987,7 +1211,7 @@ function renderChoices(m) {
 function startMission(id) {
   const m = MISSIONS.find(x => x.id === id);
   if (m.stage !== state.stage) setStage(m.stage);
-  state.mission = id; state.pick = null; state.dailyAdv = 0;
+  state.mission = id; state.pick = null; state.dailyAdv = 0; state.seasonHits = 0;
   $('missionTitle').textContent = m.title; $('missionDesc').textContent = m.desc; $('missionExtra').innerHTML = '';
   renderChoices(m);
   $('missionPanel').classList.remove('hidden'); $('suggestion').classList.add('hidden');
@@ -1049,8 +1273,13 @@ const groundKOf = pos => state.stage >= 2 ? 1 - smooth(.3, 3.5, pos.length() - E
 function setGroundLook(k, from) {
   // 地上から見た空では、月と太陽を「観測者から、地球の中心から見たのと同じ方向・同じ距離」に描く（視差をなくす）。
   // 地面に近づくほど（k が 1 に近いほど）少しずつずらすので、ギューンの途中で急に動かない
-  moon.position.copy(moonBase); sun.position.copy(SUN_DIR).multiplyScalar(SUN_D);
-  if (k > 0 && from) { moon.position.addScaledVector(from, k); sun.position.addScaledVector(from, k); }
+  moon.position.copy(moonBase); sun.position.copy(SUN_DIR).multiplyScalar(SUN_D); moon.scale.setScalar(1);
+  if (k > 0 && from) {
+    moon.position.lerp(tmpV.copy(skyDir).multiplyScalar(moonBase.length()), k).addScaledVector(from, k);   // ④では日本から見た実際の向きへ
+    sun.position.addScaledVector(from, k);
+    if (state.stage === 4) moon.scale.setScalar(1 + (state.moonScale - 1) * k);
+  }
+  moonMask.visible = state.stage === 4 && k > .5;
   skyUni.uFade.value = k; groundMat.opacity = k;
   const g = k > .5;
   moonMat.blending = g ? THREE.AdditiveBlending : THREE.NormalBlending;   // 地上では月の暗い側が空に溶ける（日食に見えない）
@@ -1058,6 +1287,40 @@ function setGroundLook(k, from) {
   sunGlow.scale.setScalar(g ? 7 : 16);
 }
 const wrap180 = a => ((a + 540) % 360) - 180;
+/* ---------- ④ 食の拡大図：大きさの比は実際どおり。北が上、東が左（南の空を見上げた向き） ---------- */
+function drawEclipseInset() {
+  const cv = $('eclCanvas'), W = cv.clientWidth, H = cv.clientHeight, dpr = Math.min(2, window.devicePixelRatio || 1);
+  if (!W) return;
+  if (cv.width !== Math.round(W * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+  const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.fillStyle = '#02060d'; g.fillRect(0, 0, W, H);
+  const e = state.ecl; if (!e) return;
+  const lunarSide = state.day > 7.4 && state.day < 22.1;
+  const c = lunarSide ? e.s.clone().negate() : e.s.clone(), north = Y_AXIS, east = new THREE.Vector3().crossVectors(north, c);
+  const range = lunarSide ? 1.9 : 1.0, cx = W / 2, cy = H / 2 + 2, k = (Math.min(W, H) / 2 - 8) / range;
+  const proj = v => [cx - DEG(Math.atan2(v.dot(east), v.dot(c))) * k, cy - DEG(Math.atan2(v.dot(north), v.dot(c))) * k];
+  const disc = (x, y, r, fill, stroke) => { g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); if (fill) { g.fillStyle = fill; g.fill(); } if (stroke) { g.strokeStyle = stroke; g.lineWidth = 1; g.stroke(); } };
+  g.strokeStyle = '#E0982C55'; g.lineWidth = 1; g.beginPath(); g.moveTo(0, cy); g.lineTo(W, cy); g.stroke();   // 公転の面（黄道）
+  const v = lunarSide ? e.m : e.topo, [mx, my] = proj(v);
+  if (lunarSide) {
+    disc(cx, cy, e.pen * k, '#3a4352', null);      // 半影
+    disc(cx, cy, e.umb * k, '#1a1d26', '#8a9bb0');  // 本影
+    const f = e.lunar ? (e.lunar.kind === '半影月食' ? .18 : .35 + .65 * Math.min(1, e.lunar.mag)) : 0;
+    disc(mx, my, e.mR * k, `rgb(${Math.round(225 - f * 95)},${Math.round(222 - f * 170)},${Math.round(212 - f * 180)})`, null);
+    // 月の進む道すじ（影に対して、東＝左へ進む）
+    const F = RAD(state.me.lon - state.me.node), slope = .0975 * Math.cos(F);
+    g.setLineDash([3, 3]); g.strokeStyle = '#7FD8F088'; g.beginPath(); g.moveTo(mx + 200, my + 200 * slope); g.lineTo(mx - 200, my - 200 * slope); g.stroke(); g.setLineDash([]);
+  } else {
+    disc(cx, cy, e.sR * k, '#FFD36E', null);         // 太陽
+    disc(mx, my, e.mRJ * k, '#06080c', '#5c7996');   // 月（日本から見た向き）
+  }
+  // 月が拡大図の外にあるときは、方向を矢印で示す
+  if (mx < 0 || mx > W || my < 0 || my > H) {
+    const ang = Math.atan2(my - cy, mx - cx), r = Math.min(W, H) / 2 - 22, ax = cx + Math.cos(ang) * r, ay = cy + Math.sin(ang) * r;
+    g.fillStyle = '#93A9C2'; g.font = '700 12px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('月', ax - Math.cos(ang) * 12, ay - Math.sin(ang) * 12);
+    g.beginPath(); g.moveTo(ax + Math.cos(ang) * 8, ay + Math.sin(ang) * 8); g.lineTo(ax + Math.cos(ang + 2.5) * 6, ay + Math.sin(ang + 2.5) * 6); g.lineTo(ax + Math.cos(ang - 2.5) * 6, ay + Math.sin(ang - 2.5) * 6); g.fill();
+  }
+}
 const tmpLook = new THREE.Vector3();
 
 let last = performance.now();
@@ -1069,7 +1332,7 @@ function frame(now) {
     setDay(d); afterChange();
   }
   if (state.tPlaying && state.stage === 2) { setTime(state.time + dt * 2); afterChange(); }
-  if (state.tPlaying && state.stage === 3) {
+  if (state.tPlaying && state.stage >= 3) {
     if (state.speed === '10m' || state.speed === '1h') {
       // 時刻を進める（地球が自転する）。24時をこえたら次の日へ
       let t = state.time + dt * (state.speed === '10m' ? 1 / 6 : 1);
@@ -1150,7 +1413,7 @@ function frame(now) {
     ambient.intensity = .025;   // 小窓では、光っていない側はほぼ見えない
   }
   insetCam.aspect = iw / ih; insetCam.updateProjectionMatrix();
-  renderer.render(scene, insetCam);
+  if (state.stage === 4) drawEclipseInset(); else renderer.render(scene, insetCam);   // ④の小窓は「食の拡大図」
   ambient.intensity = .14;
   setGroundLook(0);
 
@@ -1160,16 +1423,22 @@ function frame(now) {
   labels.sun.classList.toggle('hidden', earthView || onGround); labels.earth.classList.toggle('hidden', earthView || onGround);
   if (!earthView && !onGround) {
     placeLabel(labels.sun, sun.position, -26, true);
-    if (state.stage === 3) placeLabel(labels.earth, new THREE.Vector3(0, -EARTH_R, 0), 16, false);   // ③は上に「北極」が出るので下に書く
+    if (state.stage >= 3) placeLabel(labels.earth, new THREE.Vector3(0, -EARTH_R, 0), 16, false);   // ③④は上に「北極」が出るので下に書く
     else placeLabel(labels.earth, new THREE.Vector3(0, EARTH_R, 0), -16, false);
   }
-  labels.sun.textContent = state.stage === 3 ? '☀ 太陽' : '☀ 太陽の光';
+  labels.sun.textContent = state.stage >= 3 ? '☀ 太陽' : '☀ 太陽の光';
   // ③ 地球の近くの視点では「北極」、公転の視点では「春分・夏至・秋分・冬至」（地球と重なるものは出さない）
-  const st3sp = state.stage === 3 && !onGround, orbitV = state.view === 'orbit';
+  const st3sp = state.stage >= 3 && !onGround, orbitV = state.view === 'orbit';
+  for (const [id, x] of [['node1', ORBIT_R + 2.3], ['node2', -ORBIT_R - 2.3]]) {   // ④ 交点の線の両はし
+    const show = state.stage === 4 && !onGround && !orbitV;
+    $(id).classList.toggle('hidden', !show);
+    if (show) placeLabel($(id), moonPath.localToWorld(tmpLook.set(x, 0, 0)), 0, false);
+  }
   $('lblPole').classList.toggle('hidden', !st3sp || orbitV);
   if (st3sp && !orbitV) placeLabel($('lblPole'), axisTilt.localToWorld(tmpLook.set(0, EARTH_R * 1.75, 0)), 0, false);
   SEASONS.forEach(([id], i) => {
     const w = earthPath.localToWorld(seasonDots[i].position.clone()), show = st3sp && orbitV && w.length() > 7;
+    seasonDots[i].visible = orbitV && w.length() > 7;   // 目印は「公転」の視点だけ。今の地球の位置と重なるものは出さない
     $(id).classList.toggle('hidden', !show);
     if (show) placeLabel($(id), w, -16, false);
   });
@@ -1183,8 +1452,8 @@ function frame(now) {
     labels.moon.textContent = '▼ 月は地平線の下'; labels.moon.classList.add('below');
     placeLabel(labels.moon, obsP.clone().add(lookDir(state.moonAz, 0, tmpLook).multiplyScalar(60)), -16, false);
   } else {
-    labels.moon.textContent = onGround && phaseName(state.day) === '新月' ? '新月（見えない）' : '月'; labels.moon.classList.remove('below');
-    placeLabel(labels.moon, moonWorld.clone().addScaledVector(camera.position, groundK), onGround ? -44 : earthView ? -70 : -28, false);
+    labels.moon.textContent = onGround && phaseName(state.day) === '新月' && !(state.ecl && state.ecl.obsJ > 0) ? '新月（見えない）' : '月'; labels.moon.classList.remove('below');
+    placeLabel(labels.moon, moonWorld.clone().lerp(skyDir.clone().multiplyScalar(moonWorld.length()), groundK).addScaledVector(camera.position, groundK), onGround ? -44 * (state.stage === 4 ? state.moonScale : 1) : earthView ? -70 : -28, false);
   }
   requestAnimationFrame(frame);
 }
