@@ -252,6 +252,10 @@ details.more[open] summary:before{content:"▾ "}
       <input class="range grow" type="range" id="year" min="0" max="365" step="1" value="0" aria-label="1年の中の日付（季節）"/>
       <strong class="dock-value wide" id="seasonValue"></strong>
     </div>
+    <div class="dock-row hidden" id="seasonBtns">
+      <span class="dock-label"></span>
+      <div class="seg grow" role="group" aria-label="季節の日へ移る"><button data-lon="0">春分</button><button data-lon="90">夏至</button><button data-lon="180">秋分</button><button data-lon="270">冬至</button></div>
+    </div>
     <div class="dock-row hidden" id="timeRow">
       <button class="play" id="tPlayBtn" aria-label="時刻を再生">▶</button>
       <div class="grow"><input class="range" type="range" id="time" min="0" max="24" step="0.25" value="18" aria-label="日本の時刻"/><div class="ticks"><span>0時</span><span>6</span><span>12</span><span>18</span><span>24</span></div></div>
@@ -281,7 +285,7 @@ details.more[open] summary:before{content:"▾ "}
   <p class="explain st3only hidden">③ 地球は、地軸を<strong>約23.4°傾けたまま</strong>（向きを変えずに）、1年かけて太陽のまわりを公転します。夏至のころは日本（北半球）が太陽のほうへ傾くので、太陽が高くのぼり、昼が長くなります。冬至のころはその逆です。満月は太陽の反対側にあるので、<strong>冬の満月は高く、夏の満月は低く</strong>のぼります。月は1日に約12°ずつ東へ動くので、同じ時刻に見ると毎日東へずれ、月の出は毎日約50分ずつ遅れます。</p>
   <p class="tiny st3only hidden">③の簡略化：太陽・地球・月の大きさと距離は実際の比率ではありません。月齢は、太陽と月の角度から求めた目安です。月の通り道の傾き（約5°）は省いています（次の段階で扱います）。模型の月は実際よりずっと近いので、地上から見た空では、月と太陽を「地球の中心から見た方向」に描いています（実際の月は遠いので、地上から見てもほぼ同じ方向です）。「太陽の南中高度」「昼の長さ」は、北緯35°・日本時間での計算値です（大気による光の曲がりなどは入れていません）。</p>
   <p class="explain st4only hidden">④ 太陽・月・地球が一直線に並ぶと食が起きます。<strong>日食</strong>は太陽・月・地球の順（新月のとき）で、月の影が地球のごく一部に落ちます。<strong>月食</strong>は太陽・地球・月の順（満月のとき）で、月が地球の影に入り、赤っぽく暗くなります。月の通り道（水色）は、地球の公転の面（オレンジ）に対して<strong>約5°傾いて</strong>いるので、ふだんの新月・満月では月が太陽と地球を結ぶ線の上か下にずれ、食になりません。2つの面が交わる線（<strong>交点</strong>の線）が太陽の方向を向く時期（1年に約2回）に新月・満月になったときだけ、食が起きます。</p>
-  <p class="tiny st4only hidden">④の簡略化：宇宙からの図では、月の通り道の傾きを見やすく<strong>3倍</strong>（約15°）にしています。食が起きるかどうか・欠け具合・日本から見えるかは、実際の角度と大きさ（月の距離の変化も入れた近似式）で計算しています。食の日付は実際とほぼ同じですが、時刻は数十分ずれることがあります。右上の「食の拡大図」は、太陽・月・地球の影の大きさの比を実際どおりに描いています。地上の空では、日食のときの太陽と月の重なり具合が実際と同じになるよう、太陽の近くでは月の位置を拡大して描いています。</p>
+  <p class="tiny st4only hidden">④の簡略化：宇宙からの図では、月の通り道の傾きを見やすく<strong>3倍</strong>（約15°）にしています。食が起きるかどうか・欠け具合・日本から見えるかは、実際の角度と大きさ（月の距離の変化も入れた近似式）で計算しています。食の日付は実際とほぼ同じですが、時刻は数十分ずれることがあります。右下の「食の拡大図」は、太陽・月・地球の影の大きさの比を実際どおりに描いています。④では地上からの視点は使わず、見え方は「食の拡大図」で確かめます。</p>
   <p class="tiny st2only hidden">②の簡略化：地軸の傾きを0°にしています（春分・秋分ごろの空。地軸の傾きと季節は次の段階で扱います）。時刻を動かすあいだ、月の位置は止めて考えます（実際の月は1日に約12°東へ動くので、月の出は毎日約50分ずつ遅れます）。模型の月は実際よりずっと近いので、地上から見た空では、月を「地球の中心から見た方向」に描いています（実際の月は遠いので、地上から見てもほぼ同じ方向です）。そのため、宇宙からの図で地平線の面のすぐ近くにある月は、地上の空での見える・見えないと少しちがうことがあります。日本は北緯35°としています。</p>
   <p class="explain">月は自分では光らず、<strong>いつも太陽側の半分</strong>が照らされています（オレンジの境目）。地球から見えるのは、月の<strong>地球に向いている半分</strong>（水色の境目）だけです。2つの半分が<strong>重なった部分</strong>が、地球から見える月の形になります。</p>
   <p class="tiny">モデルの簡略化：太陽・地球・月の大きさと距離は実際の比率ではありません（実際の月は地球から約38万km、太陽はその約400倍遠くにあります）。太陽の光は平行に届くとしています。月の通り道の傾き（約5°）と、地球の公転は省いています（①では地球の自転も止めています）。月は公転と同じ周期で自転しているため、いつも同じ面（暗い模様の多い表側）を地球に向けています。①の小窓は、日本（北半球）から南の空を見たときの向きです。②で地上から見ると新月が太陽に重なりますが、実際は月の通り道が約5°傾いているので、新月のたびに日食になるわけではありません。</p>
@@ -295,7 +299,7 @@ details.more[open] summary:before{content:"▾ "}
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-const VERSION = 'v0.6.0';
+const VERSION = 'v0.7.0';
 document.getElementById('ver').textContent = '月の満ち欠けLAB α' + VERSION.slice(1);
 
 const $ = id => document.getElementById(id);
@@ -749,9 +753,9 @@ function timeWord(t) {
   return '夜';
 }
 const CHAPTER = { 1: ['月の形は、なぜ変わる？', '月をつかんで地球のまわりを回し、地球から見た形の変化を確かめよう。'],
-  2: ['月は、いつ・どの方角に見える？', '時刻を進めて、日本（緑の印）から月が見えるか確かめよう。「日本から」で地上に立って空を見られます。'],
-  3: ['季節や日によって、空はどう変わる？', '日付を選んで再生しよう。月の出の時刻や、太陽・満月の高さを季節で比べよう。'],
-  4: ['日食・月食は、いつ起きる？', '新月・満月のとき、太陽・地球・月がどう並ぶか比べよう。「次の日食」「次の月食」でさがせます。'] };
+  2: ['月は、いつ・どの方角に見える？', '月の形を決めて時刻を進め、日本（緑の印）から月が見えるか確かめよう。（しくみを分かりやすくするため、地軸の傾きを入れない春分・秋分ごろの空で考えます）'],
+  3: ['季節や日によって、空はどう変わる？', '本物のカレンダーの空です（地軸の傾き23.4°）。日付を選んで再生し、月の出の時刻や、太陽・満月の高さを季節で比べよう。'],
+  4: ['日食・月食は、いつ起きる？', '新月・満月のとき、太陽・地球・月がどう並ぶか比べよう。「次の日食」「次の月食」でさがせます。見え方は右下の「食の拡大図」で。'] };
 const TILT_OK = typeof window.DeviceOrientationEvent !== 'undefined' && window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
 function moonSkyHtml() {
   if (state.moonAlt <= 0) return '月は<em>地平線の下</em>（いまは見えない）';
@@ -1086,6 +1090,8 @@ function updateUI() {
   $('playBtn').classList.toggle('hidden', sky); $('dayLabel').classList.toggle('hidden', !sky);   // ②は時刻の▶だけにする
   $('timeRow').classList.toggle('hidden', !sky);
   for (const id of ['dateRow', 'yearRow', 'speedRow']) $(id).classList.toggle('hidden', !st3);
+  $('seasonBtns').classList.toggle('hidden', st !== 3);
+  for (const b of $('seasonBtns').querySelectorAll('button')) b.classList.toggle('active', st3 && Math.abs(((state.lon - Number(b.dataset.lon) + 540) % 360) - 180) < .6);
   $('seasonInfo').classList.toggle('hidden', st !== 3);
   $('eclRow').classList.toggle('hidden', !st4);
   $('lookSeg').classList.toggle('hidden', !(sky && earthView));
@@ -1097,6 +1103,7 @@ function updateUI() {
   for (const el of document.querySelectorAll('.skyonly')) el.classList.toggle('hidden', !sky);
   $('chQ').textContent = CHAPTER[st][0]; $('lead').textContent = CHAPTER[st][1];
   $('vSpace').classList.toggle('active', !earthView); $('vGround').classList.toggle('active', earthView);
+  $('vGround').classList.toggle('hidden', st4);   // ④は並び方を見る章なので、地上の空は使わない（見え方は食の拡大図で）
   $('vMini').classList.toggle('hidden', earthView);
   MINI[st].forEach(([v, t], i) => { const b = $('vm' + (i + 1)); b.textContent = t; b.classList.toggle('active', state.view === v); });
   stageEl.classList.toggle('ground', earthView);
@@ -1190,7 +1197,7 @@ function setStage(n) {
   if (n === 1) { camera.layers.enable(1); camera.layers.enable(3); camera.layers.disable(4); }
   if (tiltOn) stopTilt();
   if (state.view !== 'earth' && !MINI[n].some(x => x[0] === state.spaceView)) state.spaceView = MINI[n][0][0];
-  if (n === 4 && state.view !== 'earth') { state.spaceView = 'side'; goView('side'); }
+  if (n === 4) { state.spaceView = 'side'; goView('side'); }
   else if (state.view === 'earth' || state.anim || !MINI[n].some(x => x[0] === state.view)) { state.spaceView = MINI[n][0][0]; goView(state.spaceView); }
   setTimeout(() => showLegend(3500), 700);
   updateUI(); renderMissionList();
@@ -1220,6 +1227,14 @@ $('date').addEventListener('change', e => {
   const v = e.target.value; if (!v) return;
   const [y, m, d] = v.split('-').map(Number); state.n = dayNumOf(y, m, d); applyDate(); afterChange();
 });
+// 春分・夏至・秋分・冬至：その年の、太陽の方向（黄経）が 0°・90°・180°・270° になる日へ移る（時刻はそのまま）
+for (const b of $('seasonBtns').querySelectorAll('button')) b.addEventListener('click', () => {
+  const target = Number(b.dataset.lon), [y] = ymdOf(state.n), y0 = dayNumOf(y, 1, 1);
+  const diff = n => ((sunLongitude(jdOf(n, 12)) - target + 540) % 360) - 180;
+  let best = y0;
+  for (let d = 1; d < 366; d++) if (diff(y0 + d - 1) < 0 && diff(y0 + d) >= 0) { best = Math.abs(diff(y0 + d - 1)) < Math.abs(diff(y0 + d)) ? y0 + d - 1 : y0 + d; break; }
+  state.tPlaying = false; state.n = best; applyDate(); afterChange();
+});
 $('todayBtn').addEventListener('click', () => { setToday(); applyDate(); afterChange(); });
 $('year').addEventListener('input', e => { const [y] = ymdOf(state.n); state.n = dayNumOf(y, 1, 1) + Number(e.target.value); applyDate(); afterChange(); });
 for (const [id, v] of [['sp10m', '10m'], ['sp1h', '1h'], ['sp1d', '1d'], ['sp1w', '1w']]) $(id).addEventListener('click', () => {
@@ -1233,9 +1248,9 @@ const MINI = { 1: [['free', 'ななめ'], ['top', '上'], ['side', '横']], 2: [
 state.spaceView = 'free';
 const toSpace = () => { const v = MINI[state.stage].find(x => x[0] === state.spaceView); goView(v ? v[0] : MINI[state.stage][0][0]); };
 $('vSpace').addEventListener('click', () => { if (state.view === 'earth') toSpace(); });
-$('vGround').addEventListener('click', () => { if (state.view !== 'earth') goView('earth'); });
+$('vGround').addEventListener('click', () => { if (state.view !== 'earth' && state.stage !== 4) goView('earth'); });
 ['vm1', 'vm2', 'vm3'].forEach((id, i) => $(id).addEventListener('click', () => { state.spaceView = MINI[state.stage][i][0]; goView(state.spaceView); }));
-$('inset').addEventListener('click', () => { if (state.stage === 4 && state.view !== 'earth') return; if (state.view === 'earth') toSpace(); else goView('earth'); });   // 小窓を押すと入れかえ
+$('inset').addEventListener('click', () => { if (state.stage === 4) return; if (state.view === 'earth') toSpace(); else goView('earth'); });   // 小窓を押すと入れかえ
 for (const [id, v] of [['lkF', 'follow'], ['lkE', 'E'], ['lkS', 'S'], ['lkW', 'W']]) $(id).addEventListener('click', () => { if (tiltOn) stopTilt(); state.lookMode = v; updateUI(); afterChange(); });
 for (const id of ['optRays', 'optLit', 'optFace', 'optSight', 'optHorizon']) $(id).addEventListener('change', () => { updateUI(); afterChange(); });
 $('suggestionClose').addEventListener('click', () => $('suggestion').classList.add('hidden', 'dismissed'));
@@ -1450,9 +1465,9 @@ const MISSIONS = [
     hint: '1年スライダーや日付で、月齢が15くらいの日にしよう。「横」から見て、月が地球の影の向き（点線）のどこにあるか見てみよう。',
     ok: () => state.day > 13.8 && state.day < 15.8 && state.ecl && !state.ecl.lunar && state.view === 'side' && !state.anim,
     summary: '月の通り道は、地球の公転の面に対して約5°傾いています。ふつうの満月では、月は地球の影の少し上か下を通りすぎるので、月食になりません。' },
-  { id: 'M14', stage: 4, title: '日本で見える月食をさがそう', desc: '「次の月食」を何回か押して、日本から見える月食をさがそう。見つけたら「日本から」で地上に降りて、赤っぽい月を見てみよう。',
-    hint: '下の黄色い文字が「日本から：見える」になっている月食をさがそう。夜に起きる月食なら、日本から見えるよ。',
-    ok: () => !!(state.ecl && state.ecl.lunar && state.ecl.lunar.kind !== '半影月食' && state.moonAlt > 0 && inGround()),
+  { id: 'M14', stage: 4, title: '日本で見える月食をさがそう', desc: '「次の月食」を何回か押して、日本から見える月食をさがそう。右下の「食の拡大図」で、月が地球の影に入って赤っぽくなる様子も見てみよう。',
+    hint: '画面の下の大きな文字が「日本から見える」になっている月食をさがそう。日本の夜に起きる月食なら、日本から見えるよ。',
+    ok: () => !!(state.ecl && state.ecl.lunar && state.ecl.lunar.kind !== '半影月食' && state.moonAlt > 0),
     summary: '月食は、地球の夜側のどこからでも同じように見えます。月食のとき月が赤っぽく見えるのは、地球の大気を通って曲がった赤い光が、影の中の月をうっすら照らすからです。' },
   { id: 'M15', stage: 4, title: '食が起きやすい時期は1年に何回？', desc: '交点の線が太陽の方向を向くと、食が起きやすくなります（食の季節）。それは1年に何回ある？ 予想してから、再生して確かめよう。',
     choices: ['1回', '2回', '4回'], answer: '2回',
