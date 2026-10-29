@@ -97,6 +97,9 @@ button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible{o
 .compass{position:absolute;left:10px;top:56px;width:44px;z-index:3;pointer-events:none;text-align:center;font-size:9.5px;color:var(--ink-soft)}
 .compass svg{display:block;width:44px;height:44px}
 .stage canvas.tape{position:absolute;left:0;bottom:0;width:100%;height:38px;z-index:2;pointer-events:none}
+.realbtn{position:absolute;left:10px;bottom:10px;z-index:3;border:1.5px solid var(--cyan);border-radius:3px;background:#050B15cc;color:var(--cyan);font-size:12px;font-weight:700;padding:0 10px;min-height:34px}
+.realbtn.active{background:var(--cyan);color:var(--bg)}
+.realnote{position:absolute;left:10px;bottom:50px;z-index:3;max-width:calc(100% - 20px - min(38%,180px));font-size:11px;line-height:1.5;color:var(--ink);background:#050B15d9;border:1px solid var(--line);border-radius:2px;padding:4px 8px;pointer-events:none}
 .tiltbtn{position:absolute;right:10px;bottom:46px;z-index:3;border:1.5px solid var(--line-strong);border-radius:3px;background:#050B15cc;color:var(--ink);font-size:12px;font-weight:700;padding:0 10px;min-height:34px}
 .tiltbtn.active{border-color:var(--amber);color:var(--amber-ink)}
 /* 章 */
@@ -226,6 +229,8 @@ details.more[open] summary:before{content:"▾ "}
     <div class="vmini" id="vMini" role="group" aria-label="宇宙から見る向き"><button id="vm1"></button><button id="vm2"></button><button id="vm3"></button></div>
     <div class="compass hidden" id="compass"><svg viewBox="-22 -22 44 44"><circle r="19" fill="#050B15cc" stroke="#3E5F84" stroke-width="1.5"/><g id="needle"><path d="M0 -15 L4.5 0 L0 3 L-4.5 0Z" fill="#E05A4A"/><path d="M0 15 L4.5 0 L0 -3 L-4.5 0Z" fill="#EAF1F8"/></g></svg>赤が北</div>
     <button class="tiltbtn hidden" id="tiltBtn">📱 スマホで見回す</button>
+    <button class="realbtn" id="realBtn">⇔ 実際の大きさ</button>
+    <div class="realnote hidden" id="realNote">実際の大きさと距離：月まで約38万km（地球の直径の約30個分）</div>
     <div class="legend" id="legend"></div>
     <canvas class="tape hidden" id="tape"></canvas>
     <div class="inset" id="inset" role="button" aria-label="小窓と大きな画面を入れかえる"><canvas class="ecl hidden" id="eclCanvas"></canvas><div class="outline" id="insetOutline"></div><canvas class="itape hidden" id="insetTape"></canvas><div class="cap" id="insetCap">地球から見た月</div><div class="phase" id="insetPhase"></div></div>
@@ -288,7 +293,7 @@ details.more[open] summary:before{content:"▾ "}
   <p class="tiny st4only hidden">④の簡略化：宇宙からの図では、月の通り道の傾きを見やすく<strong>3倍</strong>（約15°）にしています。食が起きるかどうか・欠け具合・日本から見えるかは、実際の角度と大きさ（月の距離の変化も入れた近似式）で計算しています。食の日付は実際とほぼ同じですが、時刻は数十分ずれることがあります。右下の「食の拡大図」は、太陽・月・地球の影の大きさの比を実際どおりに描いています。④では地上からの視点は使わず、見え方は「食の拡大図」で確かめます。</p>
   <p class="tiny st2only hidden">②の簡略化：地軸の傾きを0°にしています（春分・秋分ごろの空。地軸の傾きと季節は次の段階で扱います）。時刻を動かすあいだ、月の位置は止めて考えます（実際の月は1日に約12°東へ動くので、月の出は毎日約50分ずつ遅れます）。模型の月は実際よりずっと近いので、地上から見た空では、月を「地球の中心から見た方向」に描いています（実際の月は遠いので、地上から見てもほぼ同じ方向です）。そのため、宇宙からの図で地平線の面のすぐ近くにある月は、地上の空での見える・見えないと少しちがうことがあります。日本は北緯35°としています。</p>
   <p class="explain">月は自分では光らず、<strong>いつも太陽側の半分</strong>が照らされています（オレンジの境目）。地球から見えるのは、月の<strong>地球に向いている半分</strong>（水色の境目）だけです。2つの半分が<strong>重なった部分</strong>が、地球から見える月の形になります。</p>
-  <p class="tiny">モデルの簡略化：太陽・地球・月の大きさと距離は実際の比率ではありません（実際の月は地球から約38万km、太陽はその約400倍遠くにあります）。太陽の光は平行に届くとしています。月の通り道の傾き（約5°）と、地球の公転は省いています（①では地球の自転も止めています）。月は公転と同じ周期で自転しているため、いつも同じ面（暗い模様の多い表側）を地球に向けています。①の小窓は、日本（北半球）から南の空を見たときの向きです。②で地上から見ると新月が太陽に重なりますが、実際は月の通り道が約5°傾いているので、新月のたびに日食になるわけではありません。</p>
+  <p class="tiny">モデルの簡略化：太陽・地球・月の大きさと距離は実際の比率ではありません（実際の月は地球から約38万km、太陽はその約400倍遠くにあります）。宇宙からの図の「⇔ 実際の大きさ」を押すと、地球と月は大きさも距離も実際どおりになります（太陽は遠すぎて画面に入らないので、向きと見かけの大きさだけ実際どおりにしています）。太陽の光は平行に届くとしています。月の通り道の傾き（約5°）と、地球の公転は省いています（①では地球の自転も止めています）。月は公転と同じ周期で自転しているため、いつも同じ面（暗い模様の多い表側）を地球に向けています。①の小窓は、日本（北半球）から南の空を見たときの向きです。②で地上から見ると新月が太陽に重なりますが、実際は月の通り道が約5°傾いているので、新月のたびに日食になるわけではありません。</p>
 </details>
 
 <div class="footer"><span>月齢（新月からの日数）は目安です。地上の景色（東の海・南の町・西の山・北の丘）は方角の目印で、実際の場所ではありません。画像：NASA（地球＝Blue Marble Next Generation・Black Marble 2016、月＝LRO / CGI Moon Kit）</span><span class="ver" id="ver"></span></div>
@@ -304,6 +309,8 @@ document.getElementById('ver').textContent = '月の満ち欠けLAB α' + VERSIO
 
 const $ = id => document.getElementById(id);
 const PERIOD = 29.53;               // 満ち欠けの周期（日）
+// 「実際の大きさ」：月の距離は地球の半径の60.3倍、月の半径は0.2725倍。太陽は遠くに置き、見かけの大きさ（半径0.267°）だけ実際どおり
+let orbitR = 8.5, sunDist = 34, scaleS = 1;   // いまの月の通り道の半径・太陽までの距離・ふつうの大きさからの倍率
 const EARTH_R = 2, MOON_R = 0.62, ORBIT_R = 8.5, SUN_D = 34;
 const SUN_DIR = new THREE.Vector3(-1, 0, 0);   // 地球から見た太陽の方向（①②では画面の左。③では日付で回る）
 const TILT = THREE.MathUtils.degToRad(23.44);  // ③ 地軸の傾き
@@ -344,6 +351,7 @@ const ambient = new THREE.AmbientLight(0x8fa8c8, 0.14);
 scene.add(ambient);
 
 // 星
+let stars;
 {
   const n = 700, pos = new Float32Array(n * 3);
   let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
@@ -352,7 +360,7 @@ scene.add(ambient);
     pos[i * 3] = r * Math.sqrt(1 - u * u) * Math.cos(t); pos[i * 3 + 1] = r * u; pos[i * 3 + 2] = r * Math.sqrt(1 - u * u) * Math.sin(t);
   }
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  scene.add(new THREE.Points(g, new THREE.PointsMaterial({ color: 0x9fb4cc, size: 0.7, sizeAttenuation: true })));
+  stars = new THREE.Points(g, new THREE.PointsMaterial({ color: 0x9fb4cc, size: 0.7, sizeAttenuation: true })); scene.add(stars);
 }
 
 // 模様のテクスチャはキャンバスで作る（外部画像なし）
@@ -459,11 +467,11 @@ function onHelperLayer(obj) { obj.traverse(o => o.layers.set(1)); return obj; }
 const orbitLine = onHelperLayer(new THREE.LineLoop(
   new THREE.BufferGeometry().setFromPoints(Array.from({ length: 128 }, (_, i) => new THREE.Vector3(Math.cos(i / 128 * Math.PI * 2) * ORBIT_R, 0, Math.sin(i / 128 * Math.PI * 2) * ORBIT_R))),
   new THREE.LineBasicMaterial({ color: 0x7fd8f0, transparent: true, opacity: .55 })));
-const moonPath = new THREE.Group(); moonOrbit.add(moonPath);   // ④で月の通り道の面を傾ける入れ物（①〜③は傾きなし）
+const moonPath = new THREE.Group(); moonOrbit.add(moonPath); const orbitDots = [];   // ④で月の通り道の面を傾ける入れ物（①〜③は傾きなし）
 moonPath.add(orbitLine);
 for (let k = 0; k < 8; k++) {
   const a = k / 8 * Math.PI * 2, dot = onHelperLayer(new THREE.Mesh(new THREE.SphereGeometry(.09, 8, 6), new THREE.MeshBasicMaterial({ color: 0x7fd8f0, transparent: true, opacity: .6 })));
-  dot.position.set(Math.cos(a) * ORBIT_R, 0, Math.sin(a) * ORBIT_R); moonPath.add(dot);
+  dot.position.set(Math.cos(a) * ORBIT_R, 0, Math.sin(a) * ORBIT_R); moonPath.add(dot); orbitDots.push(dot);
 }
 // 太陽の光の矢印
 const rays = onHelperLayer(new THREE.Group());
@@ -653,6 +661,7 @@ scenery.traverse(o => o.layers.set(4));
    ============================================================ */
 const state = { day: 0, playing: false, view: 'free', anim: null, dragging: false,
   stage: 1, time: 18, tPlaying: false, lookMode: 'follow', camAz: 180, camAlt: 25, moonAlt: 0, moonAz: 0, sunAlt: 0, sunAz: 0,
+  realOn: false, realK: 0, realE: 0, moonSize: 1, pendingView: null,
   sunAng: Math.PI, n: 0, lon: 0, speed: '1h', dailyAdv: 0, latV: 0, me: null, ecl: null, moonScale: 1, seasonHits: 0, inSeason: false };
 const Z_AXIS = new THREE.Vector3(0, 0, 1), Y_AXIS = new THREE.Vector3(0, 1, 0), X_AXIS = new THREE.Vector3(1, 0, 0);
 const tmpV = new THREE.Vector3(), moonWorld = new THREE.Vector3(), moonBase = new THREE.Vector3(), skyDir = new THREE.Vector3();
@@ -663,7 +672,7 @@ function moonAngle(day) { return state.sunAng + 2 * Math.PI * day / PERIOD; }
 function dayFromAngle(a) { let d = ((a - state.sunAng) / (2 * Math.PI)) * PERIOD; d = ((d % PERIOD) + PERIOD) % PERIOD; return Math.min(d, 29.5); }
 function placeMoon() {
   const a = moonAngle(state.day), b = state.latV;   // b：月が公転の面から上下にずれる角度（④だけ。見やすく3倍）
-  moon.position.set(Math.cos(a) * Math.cos(b) * ORBIT_R, Math.sin(b) * ORBIT_R, -Math.sin(a) * Math.cos(b) * ORBIT_R);
+  moon.position.set(Math.cos(a) * Math.cos(b) * orbitR, Math.sin(b) * orbitR, -Math.sin(a) * Math.cos(b) * orbitR);
   moonBase.copy(moon.position);
   skyDir.copy(moonBase).normalize();   // 地上の空に描く月の向き（④では日本から見た実際の向きに置きかえる）
   // 月は公転1回のあいだに自転も1回する（同じ周期）ので、いつも同じ面（表側）が地球を向く
@@ -840,11 +849,11 @@ function setToday(hour) {
 function setSunAngle(a) {
   state.sunAng = a;
   SUN_DIR.set(Math.cos(a), 0, -Math.sin(a));
-  sun.position.copy(SUN_DIR).multiplyScalar(SUN_D);
+  sun.position.copy(SUN_DIR).multiplyScalar(sunDist);
   sunLight.position.copy(SUN_DIR).multiplyScalar(50);
   rays.rotation.y = a - Math.PI;
   earthPath.position.copy(sun.position);
-  shadowAxisGeo.attributes.position.setXYZ(1, -SUN_DIR.x * (ORBIT_R + 3), 0, -SUN_DIR.z * (ORBIT_R + 3)); shadowAxisGeo.attributes.position.needsUpdate = true;
+  shadowAxisGeo.attributes.position.setXYZ(1, -SUN_DIR.x * (orbitR + 3), 0, -SUN_DIR.z * (orbitR + 3)); shadowAxisGeo.attributes.position.needsUpdate = true;
   shadowAxis.computeLineDistances();
 }
 function applyDate(quiet) {
@@ -853,8 +862,9 @@ function applyDate(quiet) {
   setSunAngle(RAD(state.lon) + Math.PI);   // 春分の日に、太陽が画面の左（−X）にくる向き
   const me = state.me = moonEphem(jd);
   state.day = Math.min(29.5, elongOf(jd, me) / 360 * SYNODIC);   // 月齢の目安（太陽と月の角度から）
-  state.latV = state.stage === 4 ? RAD(me.lat * LAT_EXAG) : 0;
-  moonPath.rotation.set(state.stage === 4 ? RAD(5.145 * LAT_EXAG) : 0, state.stage === 4 ? RAD(me.node) + Math.PI : 0, 0, 'YXZ');
+  const exag = LAT_EXAG + (1 - LAT_EXAG) * state.realE;   // 実際の大きさでは誇張しない（実際の約5°）
+  state.latV = state.stage === 4 ? RAD(me.lat * exag) : 0;
+  moonPath.rotation.set(state.stage === 4 ? RAD(5.145 * exag) : 0, state.stage === 4 ? RAD(me.node) + Math.PI : 0, 0, 'YXZ');
   placeMoon(); placeEarth(); updateSky();
   if (state.stage === 4) {
     if (state.ecl.season && !state.inSeason && state.tPlaying) state.seasonHits++;
@@ -867,7 +877,7 @@ function applyDate(quiet) {
 function updateShadows() {
   const e = state.ecl, on4 = state.stage === 4;
   earthCone.visible = on4 && !!e.lunar;
-  if (earthCone.visible) setCone(earthCone, new THREE.Vector3(), SUN_DIR.clone().multiplyScalar(-(ORBIT_R + 2.5)), EARTH_R * .98, 1.15);
+  if (earthCone.visible) setCone(earthCone, new THREE.Vector3(), SUN_DIR.clone().multiplyScalar(-(orbitR + 2.5)), EARTH_R * .98, 1.15 + .31 * state.realE);
   const sol = on4 && !!e.solar;
   moonCone.visible = spotPen.visible = spotUmb.visible = sol;
   if (sol) {
@@ -924,7 +934,7 @@ controls.enablePan = false; controls.minDistance = 6; controls.maxDistance = 90;
 
 function fitDistance() {
   const aspect = camera.aspect, half = RAD(45 / 2);
-  return (ORBIT_R + 2.6) / Math.tan(half) / Math.min(aspect, 1);
+  return (orbitR + 2.6) / Math.tan(half) / Math.min(aspect, 1);
 }
 function presetPose(view) {
   const d = fitDistance();
@@ -1008,7 +1018,7 @@ function stepAnimation(now) {
     if (a.toEarth && state.stage === 1) { camera.layers.disable(3); camera.layers.disable(1); }
     if (a.toEarth && g.look) { state.camAz = g.look.az; state.camAlt = g.look.alt; }
     afterChange();
-    if (!a.toEarth) { camera.up.set(0, 1, 0); controls.target.copy(g.target); currentTarget.copy(g.target); controls.maxDistance = state.view === 'orbit' ? 260 : 90; controls.enabled = true; controls.update(); }
+    if (!a.toEarth) { camera.up.set(0, 1, 0); controls.target.copy(g.target); currentTarget.copy(g.target); controls.maxDistance = state.view === 'orbit' ? 260 : 90 * scaleS; controls.enabled = true; controls.update(); }
     updateUI();
   }
 }
@@ -1108,6 +1118,10 @@ function updateUI() {
   MINI[st].forEach(([v, t], i) => { const b = $('vm' + (i + 1)); b.textContent = t; b.classList.toggle('active', state.view === v); });
   stageEl.classList.toggle('ground', earthView);
   $('tiltBtn').classList.toggle('hidden', !(sky && earthView && TILT_OK));
+  $('realBtn').classList.toggle('hidden', earthView);
+  $('realBtn').classList.toggle('active', state.realOn);
+  $('realBtn').textContent = state.realOn ? '⇔ 見やすい大きさにもどす' : '⇔ 実際の大きさ';
+  $('realNote').classList.toggle('hidden', !state.realOn || earthView);
   const mine = MISSIONS.filter(m => m.stage === st);
   $('missionOpen').innerHTML = state.mission ? '◎ ミッションを閉じる <span></span>' : `◎ ミッションに挑戦 <span>${mine.filter(m => done.has(m.id)).length} / ${mine.length} クリア ›</span>`;
   let when = `日本 ${timeStr(state.time)}（${timeWord(state.time)}）`;
@@ -1174,7 +1188,7 @@ function updateUI() {
   faceRing.visible = $('optFace').checked;
   sight.visible = $('optSight').checked;
   horizonDisc.visible = $('optHorizon').checked && st === 2;   // 地平線の面は②だけ（ほかの章では線をしぼる）
-  axisLine.visible = earthPath.visible = st3;
+  axisLine.visible = st3; earthPath.visible = st3 && state.realE < .01;
   eclipHelpers.visible = moonPlaneParts.visible = st4;
 }
 function stopPlay() { state.playing = false; updateUI(); }
@@ -1246,11 +1260,38 @@ for (const [id, v] of [['sp10m', '10m'], ['sp1h', '1h'], ['sp1d', '1d'], ['sp1w'
 const MINI = { 1: [['free', 'ななめ'], ['top', '上'], ['side', '横']], 2: [['free', 'ななめ'], ['top', '上'], ['side', '横']],
   3: [['free', 'ななめ'], ['top', '上'], ['orbit', '公転']], 4: [['free', 'ななめ'], ['side', '横'], ['orbit', '公転']] };
 state.spaceView = 'free';
+/* ---------- 「実際の大きさ」：約1.5秒かけて、見やすい大きさ ⇔ 実際の大きさ をなめらかに変える ---------- */
+const ORBIT_REAL = 60.27 * EARTH_R, SUN_FAR = 2000;
+function applyScale() {
+  const e = state.realE = easeInOut(state.realK), prevS = scaleS;
+  scaleS = Math.pow(ORBIT_REAL / ORBIT_R, e);
+  orbitR = ORBIT_R * scaleS;
+  sunDist = SUN_D * Math.pow(SUN_FAR / SUN_D, e);
+  // 太陽：地球から見た見かけの半径を 4.37°（模型）→ 0.267°（実際）へ
+  sun.scale.setScalar(sunDist * Math.tan(RAD(SUN_VIS + (.2666 - SUN_VIS) * e)) / 2.6);
+  state.moonSize = 1 + (.2725 * EARTH_R / MOON_R - 1) * e;
+  moonPath.scale.setScalar(scaleS); for (const d of orbitDots) d.scale.setScalar(1 / scaleS);
+  horizonDisc.scale.setScalar(scaleS); rays.scale.setScalar(scaleS);
+  stars.scale.setScalar(scaleS); stars.material.size = .7 * scaleS;
+  camera.far = Math.max(700, 320 * scaleS + 600); camera.near = .05 + .95 * e; camera.updateProjectionMatrix();
+  insetCam.far = camera.far;
+  controls.maxDistance = 90 * scaleS;
+  // カメラも同じ割合で引く（見ている向きはそのまま）
+  if (!state.anim && state.view !== 'earth' && state.view !== 'orbit') camera.position.multiplyScalar(scaleS / prevS);
+  setSunAngle(state.sunAng);
+  if (state.stage >= 3) applyDate(true); else { placeMoon(); updateSky(); }
+}
+function setReal(on, then) {
+  state.realOn = on; state.pendingView = then || null;
+  if (on && (state.view === 'orbit' || state.view === 'earth')) { state.spaceView = MINI[state.stage][0][0]; goView(state.spaceView); }
+  updateUI();
+}
+$('realBtn').addEventListener('click', () => setReal(!state.realOn));
 const toSpace = () => { const v = MINI[state.stage].find(x => x[0] === state.spaceView); goView(v ? v[0] : MINI[state.stage][0][0]); };
 $('vSpace').addEventListener('click', () => { if (state.view === 'earth') toSpace(); });
-$('vGround').addEventListener('click', () => { if (state.view !== 'earth' && state.stage !== 4) goView('earth'); });
-['vm1', 'vm2', 'vm3'].forEach((id, i) => $(id).addEventListener('click', () => { state.spaceView = MINI[state.stage][i][0]; goView(state.spaceView); }));
-$('inset').addEventListener('click', () => { if (state.stage === 4) return; if (state.view === 'earth') toSpace(); else goView('earth'); });   // 小窓を押すと入れかえ
+$('vGround').addEventListener('click', () => { if (state.view === 'earth' || state.stage === 4) return; if (state.realK > 0) setReal(false, 'earth'); else goView('earth'); });   // 実際の大きさのときは、元にもどしてから地上へ
+['vm1', 'vm2', 'vm3'].forEach((id, i) => $(id).addEventListener('click', () => { const v = MINI[state.stage][i][0]; state.spaceView = v; if (v === 'orbit' && state.realK > 0) setReal(false, 'orbit'); else goView(v); }));
+$('inset').addEventListener('click', () => { if (state.stage === 4) return; if (state.view === 'earth') toSpace(); else if (state.realK > 0) setReal(false, 'earth'); else goView('earth'); });   // 小窓を押すと入れかえ
 for (const [id, v] of [['lkF', 'follow'], ['lkE', 'E'], ['lkS', 'S'], ['lkW', 'W']]) $(id).addEventListener('click', () => { if (tiltOn) stopTilt(); state.lookMode = v; updateUI(); afterChange(); });
 for (const id of ['optRays', 'optLit', 'optFace', 'optSight', 'optHorizon']) $(id).addEventListener('change', () => { updateUI(); afterChange(); });
 $('suggestionClose').addEventListener('click', () => $('suggestion').classList.add('hidden', 'dismissed'));
@@ -1563,11 +1604,11 @@ const groundKOf = pos => state.stage >= 2 ? 1 - smooth(.3, 3.5, pos.length() - E
 function setGroundLook(k, from) {
   // 地上から見た空では、月と太陽を「観測者から、地球の中心から見たのと同じ方向・同じ距離」に描く（視差をなくす）。
   // 地面に近づくほど（k が 1 に近いほど）少しずつずらすので、ギューンの途中で急に動かない
-  moon.position.copy(moonBase); sun.position.copy(SUN_DIR).multiplyScalar(SUN_D); moon.scale.setScalar(1);
+  moon.position.copy(moonBase); sun.position.copy(SUN_DIR).multiplyScalar(sunDist); moon.scale.setScalar(state.moonSize);
   if (k > 0 && from) {
     moon.position.lerp(tmpV.copy(skyDir).multiplyScalar(moonBase.length()), k).addScaledVector(from, k);   // ④では日本から見た実際の向きへ
     sun.position.addScaledVector(from, k);
-    if (state.stage === 4) moon.scale.setScalar(1 + (state.moonScale - 1) * k);
+    if (state.stage === 4) moon.scale.setScalar(state.moonSize * (1 + (state.moonScale - 1) * k));
   }
   moonMask.visible = state.stage === 4 && k > .5;
   skyUni.uFade.value = k; groundMat.opacity = k;
@@ -1621,6 +1662,12 @@ function frame(now) {
     let d = state.day + dt * 2.4;
     if (d >= 29.5) { d = 29.5; state.playing = false; }
     setDay(d); afterChange();
+  }
+  if (state.realK !== (state.realOn ? 1 : 0)) {
+    state.realK = state.realOn ? Math.min(1, state.realK + dt / 1.5) : Math.max(0, state.realK - dt / 1.5);
+    if (reduceMotion) state.realK = state.realOn ? 1 : 0;
+    applyScale();
+    if (state.realK === 0 && state.pendingView) { const v = state.pendingView; state.pendingView = null; goView(v); }
   }
   if (state.tPlaying && state.stage === 2) { setTime(state.time + dt * 2); afterChange(); }
   if (state.tPlaying && state.stage >= 3) {
@@ -1700,7 +1747,7 @@ function frame(now) {
     ambient.intensity = .008;
   } else {
     const pos = new THREE.Vector3(), up = new THREE.Vector3(); observer(pos, up);
-    insetCam.fov = 14; insetCam.position.copy(pos); insetCam.up.copy(up); insetCam.lookAt(moonWorld);
+    insetCam.fov = 2 * DEG(Math.atan(Math.tan(RAD(7)) * ORBIT_R / orbitR)); insetCam.position.copy(pos); insetCam.up.copy(up); insetCam.lookAt(moonWorld);
     insetCam.layers.disable(1);
     ambient.intensity = .025;   // 小窓では、光っていない側はほぼ見えない
   }
