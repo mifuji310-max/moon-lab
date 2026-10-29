@@ -304,7 +304,7 @@ details.more[open] summary:before{content:"▾ "}
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-const VERSION = 'v0.7.0';
+const VERSION = 'v0.7.1';
 document.getElementById('ver').textContent = '月の満ち欠けLAB α' + VERSION.slice(1);
 
 const $ = id => document.getElementById(id);
@@ -1609,6 +1609,14 @@ function setGroundLook(k, from) {
     moon.position.lerp(tmpV.copy(skyDir).multiplyScalar(moonBase.length()), k).addScaledVector(from, k);   // ④では日本から見た実際の向きへ
     sun.position.addScaledVector(from, k);
     if (state.stage === 4) moon.scale.setScalar(state.moonSize * (1 + (state.moonScale - 1) * k));
+  }
+  // ギューンの途中：日本の真上に月があると、上空を通るときに月のすぐそばをかすめて、月が一瞬大きく映ってしまう。
+  // 動いている間だけ、月を「見ている向きはそのまま」で遠くに描き、画面の上で地上から見たときより大きく映らないようにする
+  const an = state.anim;
+  if (state.stage >= 2 && an && (an.toEarth || an.fromEarth) && from === camera.position) {
+    const v = tmpV.copy(moon.position).sub(from), d = v.length();
+    const dMin = moonBase.length() * Math.max(1, groundFov(camera.aspect) / camera.fov);   // 途中は画角が狭いぶん、さらに遠くに
+    if (d < dMin && d > 1e-6) moon.position.copy(from).addScaledVector(v, dMin / d);
   }
   moonMask.visible = state.stage === 4 && k > .5;
   skyUni.uFade.value = k; groundMat.opacity = k;
