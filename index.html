@@ -62,6 +62,8 @@ button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible{o
 .label.moon{color:var(--ink)}
 .label.sun{color:var(--amber-ink)}
 .label.japan{color:var(--mint)}
+.label.cm{font-size:10px;color:#9BE3B5aa}
+#cmN{font-size:12px;color:var(--mint)}
 .label.dir{font-size:14px;color:#FFE2B0;text-shadow:0 1px 5px #000,0 0 2px #000}
 .label.below{color:var(--cyan)}
 .stage-seg{max-width:560px;margin-bottom:12px}
@@ -210,6 +212,7 @@ details.more[open] summary:before{content:"▾ "}
     <div class="label" id="lblEarth">地球</div>
     <div class="label moon" id="lblMoon">月</div>
     <div class="label japan hidden" id="lblJapan">日本</div>
+    <div class="label cm hidden" id="cmN">北</div><div class="label cm hidden" id="cmE">東</div><div class="label cm hidden" id="cmS">南</div><div class="label cm hidden" id="cmW">西</div>
     <div class="label hidden" id="lblPole">北極</div>
     <div class="label hidden" id="node1">交点</div><div class="label hidden" id="node2">交点</div>
     <div class="label hidden" id="seaSpring">春分</div><div class="label hidden" id="seaSummer">夏至</div><div class="label hidden" id="seaAutumn">秋分</div><div class="label hidden" id="seaWinter">冬至</div>
@@ -284,7 +287,7 @@ details.more[open] summary:before{content:"▾ "}
   <p class="tiny">モデルの簡略化：太陽・地球・月の大きさと距離は実際の比率ではありません（実際の月は地球から約38万km、太陽はその約400倍遠くにあります）。太陽の光は平行に届くとしています。月の通り道の傾き（約5°）と、地球の公転は省いています（①では地球の自転も止めています）。月は公転と同じ周期で自転しているため、いつも同じ面（暗い模様の多い表側）を地球に向けています。①の小窓は、日本（北半球）から南の空を見たときの向きです。②で地上から見ると新月が太陽に重なりますが、実際は月の通り道が約5°傾いているので、新月のたびに日食になるわけではありません。</p>
 </details>
 
-<div class="footer"><span>月齢（新月からの日数）は目安です。地上の景色（東の海・南の町・西の山・北の丘）は方角の目印で、実際の場所ではありません。</span><span class="ver" id="ver"></span></div>
+<div class="footer"><span>月齢（新月からの日数）は目安です。地上の景色（東の海・南の町・西の山・北の丘）は方角の目印で、実際の場所ではありません。画像：NASA（地球＝Blue Marble Next Generation・Black Marble 2016、月＝LRO / CGI Moon Kit）</span><span class="ver" id="ver"></span></div>
 </main>
 <div class="toast hidden" id="toast"></div>
 
@@ -292,7 +295,7 @@ details.more[open] summary:before{content:"▾ "}
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-const VERSION = 'v0.5.0';
+const VERSION = 'v0.6.0';
 document.getElementById('ver').textContent = '月の満ち欠けLAB α' + VERSION.slice(1);
 
 const $ = id => document.getElementById(id);
@@ -390,6 +393,36 @@ const moonOrbit = new THREE.Group(); earthSystem.add(moonOrbit);
 const moonMat = new THREE.MeshStandardMaterial({ map: moonTex, roughness: 1, metalness: 0 });
 const moon = new THREE.Mesh(new THREE.SphereGeometry(MOON_R, 40, 28), moonMat);
 moonOrbit.add(moon);
+// 本物の地図（NASA の画像）。地図の中央（経度0°）が earth の +X、月の地図の中央（表側）は地球を向く面
+const texLoader = new THREE.TextureLoader();
+const loadTex = (url, ok) => texLoader.load(url, t => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy()); ok(t); }, undefined, () => { /* 読み込めなかったら今の模様のまま */ });
+loadTex('textures/earth_day.jpg', t => { earth.material.map = t; earth.material.needsUpdate = true; });
+loadTex('textures/moon.jpg', t => { moonMat.map = t; moonMat.needsUpdate = true; });
+// 夜の街明かり：夜側だけうっすら光らせる（太陽の向きは、描くカメラごとに onBeforeRender で渡す）
+const sunView = { value: new THREE.Vector3(-1, 0, 0) };
+loadTex('textures/earth_night.jpg', t => {
+  t.colorSpace = THREE.NoColorSpace;
+  Object.assign(earth.material, { emissiveMap: t, emissive: new THREE.Color(1, .82, .55), emissiveIntensity: .9 });
+  earth.material.onBeforeCompile = sh => {
+    sh.uniforms.uSunView = sunView;
+    sh.fragmentShader = 'uniform vec3 uSunView;\n' + sh.fragmentShader.replace('#include <emissivemap_fragment>',
+      '#include <emissivemap_fragment>\n totalEmissiveRadiance *= smoothstep(0.08, -0.18, dot(normalize(normal), uSunView));');
+  };
+  earth.material.needsUpdate = true;
+});
+earth.onBeforeRender = (r, sc, cam) => { sunView.value.copy(SUN_DIR).transformDirection(cam.matrixWorldInverse); };
+// 大気の薄いふち：地球のふちほど水色に光る（昼側を少し強く）
+const atmosphere = new THREE.Mesh(new THREE.SphereGeometry(EARTH_R * 1.035, 64, 48), new THREE.ShaderMaterial({
+  uniforms: { uSunView: sunView }, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+  vertexShader: 'varying vec3 vN; varying vec3 vV; void main(){ vec4 mv = modelViewMatrix * vec4(position, 1.0); vN = normalize(normalMatrix * normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }',
+  fragmentShader: `uniform vec3 uSunView; varying vec3 vN; varying vec3 vV;
+    void main(){ float rim = pow(1.0 - clamp(dot(vN, vV), 0.0, 1.0), 3.0); float day = 0.25 + 0.75 * clamp(dot(vN, uSunView) + 0.35, 0.0, 1.0);
+    gl_FragColor = vec4(vec3(0.42, 0.7, 1.0) * rim * day * 0.9, 1.0);
+    #include <colorspace_fragment>
+    }`
+}));
+atmosphere.onBeforeRender = earth.onBeforeRender;
+axisTilt.add(atmosphere);
 // 指でつかみやすいよう、月より大きい透明な「つかみ判定」（レイヤー2：画面には映らない）
 const moonGrip = new THREE.Mesh(new THREE.SphereGeometry(MOON_R * 2.6, 12, 8), new THREE.MeshBasicMaterial());
 moonGrip.layers.set(2); moon.add(moonGrip);
@@ -500,10 +533,15 @@ function setCap(mesh, dir, angle) {   // 地球の表面の、dir を中心と�
 
 /* ---------- ② 日本（北緯35°）：目印・地平線の面・地上の景色 ----------
    japan は地球（earth）の子なので、地球の自転といっしょに回る。japan の +Y が「真上」 */
-const LAT = RAD(35);
+const LAT = RAD(35), LON = RAD(135);   // 日本：北緯35°・東経135°（地図の画像の上の日本に合わせる）
 const japan = new THREE.Group(); earth.add(japan);
-japan.position.set(Math.cos(LAT) * EARTH_R, Math.sin(LAT) * EARTH_R, 0);
+// 地図の画像では、経度 L の地点は earth の中で (cos L, ・, −sin L) の向き
+japan.position.set(Math.cos(LAT) * Math.cos(LON) * EARTH_R, Math.sin(LAT) * EARTH_R, -Math.cos(LAT) * Math.sin(LON) * EARTH_R);
 japan.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), japan.position.clone().normalize());
+// japan の中での北・東の向き（地球の自転の軸は earth の Y 軸）
+const JUP = japan.position.clone().normalize(), JQI = japan.quaternion.clone().invert();
+const JEL = new THREE.Vector3(0, 1, 0).cross(JUP).normalize(), JNL = JUP.clone().cross(JEL).normalize();
+JEL.applyQuaternion(JQI); JNL.applyQuaternion(JQI);
 japan.visible = false;
 // 目印のピン（地上にいるときは隠す）
 const pin = new THREE.Group(); japan.add(pin);
@@ -528,6 +566,17 @@ const horizonDisc = new THREE.Group(); japan.add(horizonDisc);
   horizonDisc.add(disc, edge);
 }
 onHelperLayer(horizonDisc);
+// 方角の印：ピンを中心に、地表に沿った十字。北だけ明るく、矢じり付き
+const compassMark = new THREE.Group(); japan.add(compassMark);
+{
+  const mk = (dir, len, color, op) => new THREE.Line(new THREE.BufferGeometry().setFromPoints([dir.clone().multiplyScalar(.2), dir.clone().multiplyScalar(len)]).translate(0, .02, 0),
+    new THREE.LineBasicMaterial({ color, transparent: true, opacity: op }));
+  compassMark.add(mk(JNL, .8, 0x9be3b5, 1), mk(JNL.clone().negate(), .6, 0x9be3b5, .55), mk(JEL, .6, 0x9be3b5, .55), mk(JEL.clone().negate(), .6, 0x9be3b5, .55));
+  const tip = JNL.clone().multiplyScalar(.8), side = JEL.clone().multiplyScalar(.1), back = JNL.clone().multiplyScalar(.64);
+  const g = new THREE.BufferGeometry().setFromPoints([tip, back.clone().add(side), back.clone().sub(side)]).translate(0, .02, 0);
+  compassMark.add(new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: 0x9be3b5, side: THREE.DoubleSide })));
+}
+onHelperLayer(compassMark);
 // 地面（レイヤー4）：地平線より下を隠す。空より先に描く
 const groundMat = new THREE.MeshBasicMaterial({ color: 0x2c4430, transparent: true, opacity: 1 });
 const ground = new THREE.Mesh(new THREE.CircleGeometry(400, 72), groundMat);
@@ -551,8 +600,7 @@ const sceneryMat = { near: new THREE.MeshBasicMaterial({ color: 0x1f2b2a, transp
   sea: new THREE.MeshBasicMaterial({ color: 0x2c4f72, transparent: true, depthWrite: true }) };
 {
   // japan の中での北・東の向き（地球の自転の軸は earth の Y 軸）
-  const qi = japan.quaternion.clone().invert();
-  const NL = new THREE.Vector3(-Math.sin(LAT), Math.cos(LAT), 0).applyQuaternion(qi), EL = new THREE.Vector3(0, 0, -1).applyQuaternion(qi);
+  const NL = JNL, EL = JEL;
   const hdir = az => NL.clone().multiplyScalar(Math.cos(RAD(az))).addScaledVector(EL, Math.sin(RAD(az)));
   let sd = 5; const rnd = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
   const D = 6, T = h => D * Math.tan(RAD(h));
@@ -656,7 +704,7 @@ function placeEarth() {
   axisTilt.rotation.x = state.stage >= 3 ? TILT : 0;
   if (state.stage >= 2) {
     sunLocal.copy(SUN_DIR).applyAxisAngle(X_AXIS, -axisTilt.rotation.x);   // 傾いた地球から見た太陽の方角
-    earth.rotation.y = Math.atan2(-sunLocal.z, sunLocal.x) + Math.PI * (state.time - 12) / 12;
+    earth.rotation.y = Math.atan2(-sunLocal.z, sunLocal.x) + Math.PI * (state.time - 12) / 12 - LON;   // 日本（東経135°）が12時に太陽を向く
   } else earth.rotation.y = 0;
   axisTilt.updateMatrixWorld(true);
 }
@@ -1511,7 +1559,7 @@ function setGroundLook(k, from) {
   for (const m of Object.values(sceneryMat)) m.opacity = smooth(.85, 1, k);   // 景色は地面に降りきる直前から
   const g = k > .5;
   moonMat.blending = g ? THREE.AdditiveBlending : THREE.NormalBlending;   // 地上では月の暗い側が空に溶ける（日食に見えない）
-  moonMat.transparent = g; pin.visible = !g;
+  moonMat.transparent = g; pin.visible = !g; atmosphere.visible = !g;
   sunGlow.scale.setScalar(g ? 7 : 16);
 }
 const wrap180 = a => ((a + 540) % 360) - 180;
@@ -1681,6 +1729,19 @@ function frame(now) {
   const tipShow = (id, on, world) => { $(id).classList.toggle('hidden', !on); if (on) placeLabel($(id), world, 0, false); };
   tipShow('tipMoonPath', !onGround && !orbitV, moonPath.localToWorld(tmpLook.set(Math.cos(2.4) * ORBIT_R, 0, -Math.sin(2.4) * ORBIT_R)));
   tipShow('tipHorizon', !onGround && state.stage === 2 && horizonDisc.visible, japan.localToWorld(tmpLook.set(HORIZON_R * .8, 0, HORIZON_R * .6)));
+  // 日本のピンのまわりの方角の文字（日本が地球のこちら側を向いているときだけ）
+  {
+    const jw = japan.getWorldPosition(new THREE.Vector3()), up = jw.clone().normalize();
+    const facing = camera.position.clone().sub(jw).dot(up) > 0;
+    // 地球が画面で小さいときは文字を出さず十字だけ（文字が「日本」「北極」と重ならないように）
+    const earthPx = EARTH_R / (camera.position.length() * Math.tan(RAD(camera.fov / 2))) * stageEl.clientHeight / 2;
+    const showCm = st2 && !onGround && !orbitV && state.view !== 'earth' && facing && earthPx > 85;
+    compassMark.visible = st2 && !orbitV;
+    for (const [id, d, r] of [['cmN', JNL, 1.1], ['cmS', JNL, -.85], ['cmE', JEL, .85], ['cmW', JEL, -.85]]) {
+      $(id).classList.toggle('hidden', !showCm);
+      if (showCm) placeLabel($(id), japan.localToWorld(d.clone().multiplyScalar(r)), 0, false);
+    }
+  }
   tipShow('tipEarthPath', !onGround && orbitV && state.stage >= 3, earthPath.localToWorld(tmpLook.set(Math.cos(.7) * SUN_D, 0, Math.sin(.7) * SUN_D)));
   if (onGround && state.moonAlt <= 0) {
     labels.moon.textContent = '▼ 月は地平線の下'; labels.moon.classList.add('below');
