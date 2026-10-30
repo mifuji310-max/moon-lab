@@ -304,7 +304,7 @@ details.more[open] summary:before{content:"▾ "}
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-const VERSION = 'v0.7.3';
+const VERSION = 'v0.7.4';
 document.getElementById('ver').textContent = '月の満ち欠けLAB α' + VERSION.slice(1);
 
 const $ = id => document.getElementById(id);
@@ -917,9 +917,10 @@ function updateSkyColors() {
 
 // 地上の視点の画角と、見る向き（地平線が画面の下のほうに入るようにする）
 function groundFov(aspect) { return Math.max(62, Math.min(82, 2 * DEG(Math.atan(Math.tan(RAD(42)) / aspect)))); }
-function lookTarget(fov, mode = state.lookMode, below = 95 / Math.max(200, stageEl.clientHeight)) {
+function lookTarget(fov, mode = state.lookMode, below = 95 / Math.max(200, stageEl.clientHeight), topDeg = 9) {
   const base = fov / 2 - fov * below;   // 地平線は画面の下から約95px上（下の案内表示と重ならない）
-  if (mode === 'follow') return { az: state.moonAz, alt: state.moonAlt > 0 ? Math.min(70, Math.max(base, state.moonAlt - fov / 2 + 9)) : base };
+  // 月が高いときは、月を画面の上から topDeg だけ下に置く（小窓では上の見出しと重ならない位置）
+  if (mode === 'follow') return { az: state.moonAz, alt: state.moonAlt > 0 ? Math.min(70, Math.max(base, state.moonAlt - fov / 2 + topDeg)) : base };
   if (mode === 'free' || mode === 'device') return null;
   return { az: { E: 90, S: 180, W: 270 }[mode], alt: base };
 }
@@ -1748,7 +1749,8 @@ function frame(now) {
     ambient.intensity = .14;
   } else if (st2) {
     // ② 宇宙から見ているあいだは、小窓に「日本から見た空」（月のある方角）を出す
-    const pos = groundPos(), fov = groundFov(1), t = lookTarget(fov, 'follow', .12);
+    const capH = $('insetCap').offsetHeight;   // 小窓の上の見出し「日本から見た空」の高さ
+    const pos = groundPos(), fov = groundFov(1), t = lookTarget(fov, 'follow', .12, fov * (capH + 14) / ih);   // 月（半径約8px）が見出しのすぐ下に来るように
     insetCam.fov = fov; insetCam.position.copy(pos); insetCam.up.copy(obsU);
     insetCam.lookAt(pos.add(lookDir(t.az, t.alt, tmpLook)));
     insetCam.layers.disable(1); insetCam.layers.enable(3); insetCam.layers.enable(4);
