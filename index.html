@@ -304,7 +304,7 @@ details.more[open] summary:before{content:"▾ "}
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-const VERSION = 'v0.7.2';
+const VERSION = 'v0.7.3';
 document.getElementById('ver').textContent = '月の満ち欠けLAB α' + VERSION.slice(1);
 
 const $ = id => document.getElementById(id);
@@ -1730,8 +1730,9 @@ function frame(now) {
   renderer.render(scene, camera);
 
   // 右上の小窓
-  const ins = $('inset').getBoundingClientRect(), st = stageEl.getBoundingClientRect();
-  const ix = ins.left - st.left + 1.5, iy = ins.top - st.top + 1.5, iw = ins.width - 3, ih = ins.height - 3;
+  // 小窓の枠の内側を、3Dの画面（canvas）の左上からの位置で求める（枠線の太さは画面によって少し違うので実測する）
+  const insEl = $('inset'), ins = insEl.getBoundingClientRect(), cvr = renderer.domElement.getBoundingClientRect();
+  const ix = ins.left + insEl.clientLeft - cvr.left, iy = ins.top + insEl.clientTop - cvr.top, iw = insEl.clientWidth, ih = insEl.clientHeight;
   Object.assign(insetBox, { x: ix, y: iy, w: iw, h: ih });
   renderer.setScissorTest(true);
   renderer.setScissor(ix, h - iy - ih, iw, ih); renderer.setViewport(ix, h - iy - ih, iw, ih);
@@ -1766,7 +1767,7 @@ function frame(now) {
     const mw = moon.getWorldPosition(new THREE.Vector3()), dist = mw.distanceTo(insetCam.position);
     const c = mw.clone().project(insetCam);
     const rPx = ih / 2 * Math.tan(Math.asin(Math.min(1, MOON_R * moon.scale.x / dist))) / Math.tan(RAD(insetCam.fov / 2));
-    Object.assign($('insetOutline').style, { left: `${(c.x + 1) / 2 * iw}px`, top: `${(1 - c.y) / 2 * ih}px`, width: `${2 * rPx + 1.5}px` });
+    Object.assign($('insetOutline').style, { left: `${(c.x + 1) / 2 * iw}px`, top: `${(1 - c.y) / 2 * ih}px`, width: `${2 * rPx}px` });   // 点線の外側が月のふちにそろう
   }
   if (st2 && state.stage !== 4 && state.view !== 'earth') drawTape($('insetTape'), insetCam, false);
   ambient.intensity = .14;
