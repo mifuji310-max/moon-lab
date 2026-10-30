@@ -304,7 +304,7 @@ details.more[open] summary:before{content:"▾ "}
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-const VERSION = 'v0.7.1';
+const VERSION = 'v0.7.2';
 document.getElementById('ver').textContent = '月の満ち欠けLAB α' + VERSION.slice(1);
 
 const $ = id => document.getElementById(id);
@@ -1761,6 +1761,13 @@ function frame(now) {
   }
   insetCam.aspect = iw / ih; insetCam.updateProjectionMatrix();
   if (state.stage === 4) drawEclipseInset(); else renderer.render(scene, insetCam);   // ④の小窓は「食の拡大図」
+  // ①の小窓：月の輪郭の点線を、いま描いた月の位置・大きさにぴったり重ねる（月までの距離で見かけの大きさが少し変わるため）
+  if (state.stage === 1 && state.view !== 'earth') {
+    const mw = moon.getWorldPosition(new THREE.Vector3()), dist = mw.distanceTo(insetCam.position);
+    const c = mw.clone().project(insetCam);
+    const rPx = ih / 2 * Math.tan(Math.asin(Math.min(1, MOON_R * moon.scale.x / dist))) / Math.tan(RAD(insetCam.fov / 2));
+    Object.assign($('insetOutline').style, { left: `${(c.x + 1) / 2 * iw}px`, top: `${(1 - c.y) / 2 * ih}px`, width: `${2 * rPx + 1.5}px` });
+  }
   if (st2 && state.stage !== 4 && state.view !== 'earth') drawTape($('insetTape'), insetCam, false);
   ambient.intensity = .14;
   setGroundLook(0);
