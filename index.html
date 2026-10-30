@@ -304,7 +304,7 @@ details.more[open] summary:before{content:"▾ "}
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-const VERSION = 'v0.7.4';
+const VERSION = 'v0.7.5';
 document.getElementById('ver').textContent = '月の満ち欠けLAB α' + VERSION.slice(1);
 
 const $ = id => document.getElementById(id);
@@ -660,7 +660,7 @@ scenery.traverse(o => o.layers.set(4));
    状態
    ============================================================ */
 const state = { day: 0, playing: false, view: 'free', anim: null, dragging: false,
-  stage: 1, time: 18, tPlaying: false, lookMode: 'follow', camAz: 180, camAlt: 25, moonAlt: 0, moonAz: 0, sunAlt: 0, sunAz: 0,
+  stage: 1, time: 18, tPlaying: false, lookMode: 'follow', camAz: 180, camAlt: 25, moonAlt: 0, moonPeak: 55, moonAz: 0, sunAlt: 0, sunAz: 0,
   realOn: false, realK: 0, realE: 0, moonSize: 1, pendingView: null,
   sunAng: Math.PI, n: 0, lon: 0, speed: '1h', dailyAdv: 0, latV: 0, me: null, ecl: null, moonScale: 1, seasonHits: 0, inSeason: false };
 const Z_AXIS = new THREE.Vector3(0, 0, 1), Y_AXIS = new THREE.Vector3(0, 1, 0), X_AXIS = new THREE.Vector3(1, 0, 0);
@@ -746,6 +746,10 @@ function updateSky() {
   const su = skyOf(sun.position); state.sunAlt = su.alt; state.sunAz = su.az;
   if (state.stage === 4) computeEclipse();
   const m = skyOf(state.stage === 4 ? state.ecl.topo : moonWorld); state.moonAlt = m.alt; state.moonAz = m.az;
+  // その日の月のいちばん高い高さ（南中高度）＝ 90° − |緯度 − 月の赤緯|。地軸の向き＝真上×sin(緯度)＋北×cos(緯度)
+  const pole = tmpV.copy(obsU).multiplyScalar(Math.sin(LAT)).addScaledVector(obsN, Math.cos(LAT));
+  const dec = DEG(Math.asin(Math.max(-1, Math.min(1, pole.dot(moonWorld.clone().normalize())))));
+  state.moonPeak = 90 - Math.abs(DEG(LAT) - dec);
 }
 const DIR16 = ['北', '北北東', '北東', '東北東', '東', '東南東', '南東', '南南東', '南', '南南西', '南西', '西南西', '西', '西北西', '北西', '北北西'];
 const dirName = az => DIR16[Math.round(((az % 360) + 360) % 360 / 22.5) % 16];
@@ -919,8 +923,13 @@ function updateSkyColors() {
 function groundFov(aspect) { return Math.max(62, Math.min(82, 2 * DEG(Math.atan(Math.tan(RAD(42)) / aspect)))); }
 function lookTarget(fov, mode = state.lookMode, below = 95 / Math.max(200, stageEl.clientHeight), topDeg = 9) {
   const base = fov / 2 - fov * below;   // 地平線は画面の下から約95px上（下の案内表示と重ならない）
-  // 月が高いときは、月を画面の上から topDeg だけ下に置く（小窓では上の見出しと重ならない位置）
-  if (mode === 'follow') return { az: state.moonAz, alt: state.moonAlt > 0 ? Math.min(70, Math.max(base, state.moonAlt - fov / 2 + topDeg)) : base };
+  // 月を追う：視線の高さは、月の高さに合わせて少しずつ上げる。月がその日いちばん高くなった（南中した）ときに、
+  // ちょうど画面の上から topDeg 下に来るようにする。月の高さで視線を止めないので、月は画面の上でも昇り続けて見える
+  if (mode === 'follow') {
+    const peak = state.moonPeak, top = Math.min(70, peak - fov / 2 + topDeg);
+    const f = peak > 0 ? Math.max(0, Math.min(1, state.moonAlt / peak)) : 0;
+    return { az: state.moonAz, alt: top > base ? base + (top - base) * f : base };
+  }
   if (mode === 'free' || mode === 'device') return null;
   return { az: { E: 90, S: 180, W: 270 }[mode], alt: base };
 }
@@ -1740,11 +1749,14 @@ function frame(now) {
   renderer.setClearColor(0x02060d, 1); renderer.clear();
   insetCam.layers.disable(4); insetCam.layers.disable(3);
   setGroundLook(0);
+  let insetShift = 0;   // 小窓の絵を下にずらす量（px）
   if (state.view === 'earth') {
     // 地球から見ているあいだは、小窓に「宇宙の上から見た位置」を出して対応を見比べられるようにする
-    const d = ORBIT_R + 3;
-    insetCam.fov = 2 * DEG(Math.atan(d / (d * 2.4)));
+    // 上の見出し「宇宙から見ると」と重ならないよう、見出しの下の部分に収まる大きさにして、見出しの高さの半分だけ下げる
+    const d = ORBIT_R + 3, capH = $('insetCap').offsetHeight, room = Math.max(.5, (ih - capH - 4) / ih);
+    insetCam.fov = 2 * DEG(Math.atan(1 / (2.4 * room)));
     insetCam.position.set(0, d * 2.4, .001); insetCam.up.set(0, 1, 0); insetCam.lookAt(0, 0, 0);
+    insetShift = (capH + 4) / 2;
     insetCam.layers.enable(1);
     ambient.intensity = .14;
   } else if (st2) {
@@ -1762,7 +1774,9 @@ function frame(now) {
     insetCam.layers.disable(1);
     ambient.intensity = .025;   // 小窓では、光っていない側はほぼ見えない
   }
-  insetCam.aspect = iw / ih; insetCam.updateProjectionMatrix();
+  insetCam.aspect = iw / ih;
+  if (insetShift) insetCam.setViewOffset(iw, ih, 0, -insetShift, iw, ih); else insetCam.clearViewOffset();
+  insetCam.updateProjectionMatrix();
   if (state.stage === 4) drawEclipseInset(); else renderer.render(scene, insetCam);   // ④の小窓は「食の拡大図」
   // ①の小窓：月の輪郭の点線を、いま描いた月の位置・大きさにぴったり重ねる（月までの距離で見かけの大きさが少し変わるため）
   if (state.stage === 1 && state.view !== 'earth') {
